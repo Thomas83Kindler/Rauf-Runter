@@ -901,19 +901,20 @@
                         const cardToDrop = aiChooseCardToExchange(currentPlayer, state.trump);
                         if (cardToDrop && state.deck.length > 0) {
                             executeCardExchange(currentPlayer, cardToDrop.id);
-                            setStatusBanner(`<span class="text-sky-300 font-bold">${currentPlayer.name}</span> tauscht 1 Karte aus.`);
-                        } else {
-                            setStatusBanner(`<span class="text-slate-200 font-bold">${currentPlayer.name}</span> behält alle Karten.`);
-                        }
-                        syncStateToCloud();
+        function showHumanExchangeDialog() {
+            const box = document.getElementById('exchange-selection-box');
+            const confirmBtn = document.getElementById('btn-confirm-exchange');
+            const infoText = document.getElementById('exchange-info-text');
 
-                        state.aiTimeout = setTimeout(() => {
-                            advanceExchangeTurn();
-                        }, 850);
-                    }, 750);
-                }
-            }
+            state.selectedExchangeCardId = null;
+            confirmBtn.disabled = true;
+            confirmBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition';
+            infoText.textContent = 'Klicke unten eine Karte auf deiner Hand an, um sie vor der Stich-Ansage auszutauschen, oder behalte deine Karten.';
+
+            box.classList.remove('hidden');
+            renderHumanArea();
         }
+
         function selectCardForExchange(cardId) {
             if (state.phase !== 'EXCHANGE' || !isLocalPlayer(state.turnIdx)) return;
 
