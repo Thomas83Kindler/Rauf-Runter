@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rauf Runter - Das Kartenspiel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #1b4332 0%, #081c15 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Spielkarten Design & Animationen */
+        .playing-card {
+            width: 74px;
+            height: 108px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45), inset 0 0 0 1px #e2e8f0;
+            position: relative;
+            transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, filter 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 6px;
+        }
+
+        @media (min-width: 640px) {
+            .playing-card {
+                width: 88px;
+                height: 128px;
+                padding: 8px;
+            }
+        }
+
+        .playing-card.playable {
+            cursor: pointer;
+        }
+
+        .playing-card.playable:hover {
+            transform: translateY(-14px) scale(1.04);
+            box-shadow: 0 14px 24px rgba(0, 0, 0, 0.6), 0 0 0 2px #fbbf24;
+            z-index: 20;
+        }
+
+        .playing-card.disabled {
+            filter: brightness(0.65) contrast(0.9);
+            cursor: not-allowed;
+        }
+
+        .playing-card.trump-card {
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35), inset 0 0 0 2px #f59e0b;
+        }
+
+        .playing-card.exchange-selected {
+            transform: translateY(-16px) scale(1.05);
+            box-shadow: 0 14px 24px rgba(56, 189, 248, 0.5), 0 0 0 3px #38bdf8;
+            z-index: 25;
+        }
+
+        .card-red {
+            color: #dc2626;
+        }
+
+        .card-black {
+            color: #0f172a;
+        }
+
+        /* Kartenrücken für Gegner */
+        .card-back {
+            width: 36px;
+            height: 52px;
+            background: repeating-linear-gradient(
+                45deg,
+                #1e3a8a,
+                #1e3a8a 5px,
+                #1d4ed8 5px,
+                #1d4ed8 10px
+            );
+            border: 2px solid #ffffff;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        }
+
+        /* Tisch-Animation beim Ausspielen */
+        @keyframes cardDrop {
+            0% {
+                opacity: 0;
+                transform: scale(1.35) translateY(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .played-card-anim {
+            animation: cardDrop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Custom Scrollbar für Punktetabelle */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between">
+
+    <!-- Top Navigation / Statusleiste -->
+    <header class="w-full bg-black/40 backdrop-blur-md border-b border-white/10 px-4 py-3 flex flex-wrap items-center justify-between gap-2 z-30">
+        <div class="flex items-center gap-3">
+            <div class="bg-amber-500 text-slate-950 font-extrabold px-3 py-1 rounded-lg text-lg tracking-tight shadow">
+                ♠♥ Rauf Runter ♦♣
+            </div>
+            <div id="header-round-info" class="hidden text-sm sm:text-base font-medium text-emerald-200 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-700/50">
+                Runde <span id="ui-round-num">1</span>/<span id="ui-total-rounds">9</span> • <span id="ui-cards-count" class="font-bold text-white">2</span> Karten
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Trumpf Anzeige -->
+            <div id="header-trump-box" class="hidden items-center gap-2 bg-slate-900/90 border border-amber-500/40 px-3 py-1 rounded-lg shadow">
+                <span class="text-xs uppercase tracking-wider text-slate-400">Trumpf:</span>
+                <span id="ui-trump-display" class="font-bold text-sm sm:text-base flex items-center gap-1">-</span>
+                <span id="ui-double-badge" class="hidden text-[11px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded animate-pulse">2x PUNKTE</span>
+            </div>
+
+            <button onclick="toggleModal('rules-modal')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium rounded-lg transition border border-white/10">
+                Regeln
+            </button>
+            <button id="btn-scoreboard" onclick="toggleModal('score-modal')" class="hidden px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs sm:text-sm font-medium rounded-lg transition border border-amber-500/30">
+                Punktestand
+            </button>
+            <button id="btn-leave-room" onclick="leaveMultiplayerRoom()" class="hidden px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs sm:text-sm font-medium rounded-lg transition border border-red-500/30">
+                Verlassen
+            </button>
+        </div>
+    </header>
+
+    <!-- STARTBILDSCHIRM / LOBBY -->
+    <main id="lobby-screen" class="flex-1 flex items-center justify-center p-4">
+        <div class="max-w-lg w-full bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            <div class="text-center mb-5">
+                <div class="inline-flex justify-center gap-2 text-3xl mb-2">
+                    <span class="text-red-500">♥</span>
+                    <span class="text-slate-200">♠</span>
+                    <span class="text-red-500">♦</span>
+                    <span class="text-slate-200">♣</span>
+                </div>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">Rauf Runter</h1>
+                <p class="text-slate-400 text-sm mt-1">Das taktische Stich-Kartenspiel mit 32 Karten</p>
+            </div>
+
+            <!-- Modus-Umschalter: Einzelspieler vs. Online-Mehrspieler -->
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950/80 rounded-xl border border-white/10 mb-5">
+                <button type="button" id="tab-solo" onclick="switchLobbyMode('solo')" class="py-2 rounded-lg text-sm font-bold bg-amber-500 text-slate-950 shadow transition">
+                    Gegen Computer
+                </button>
+                <button type="button" id="tab-multi" onclick="switchLobbyMode('multi')" class="py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition">
+                    Online mit Freunden
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1.5">Dein Spielername</label>
+                    <input type="text" id="player-name-input" value="Spieler" maxlength="14"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500 transition">
+                </div>
+
+                <!-- ANSICHT 1: EINZELSPIELER -->
+                <div id="solo-setup-panel" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Anzahl der Spieler (inkl. dir)</label>
+                        <div class="grid grid-cols-4 gap-2" id="player-count-selector">
+                            <button type="button" data-count="3" class="count-btn py-3 rounded-xl font-bold border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+                                3 Spieler<span class="block text-[11px] font-normal text-slate-400">bis 9 Karten</span>
+                            </button>
+                            <button type="button" data-count="4" class="count-btn py-3 rounded-xl font-bold border-2 border-amber-500 bg-amber-500/20 text-amber-300 transition">
+                                4 Spieler<span class="block text-[11px] font-normal text-amber-200/80">bis 7 Karten</span>
+                            </button>
+                            <button type="button" data-count="5" class="count-btn py-3 rounded-xl font-bold border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+                                5 Spieler<span class="block text-[11px] font-normal text-slate-400">bis 6 Karten</span>
+                            </button>
+                            <button type="button" data-count="6" class="count-btn py-3 rounded-xl font-bold border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+                                6 Spieler<span class="block text-[11px] font-normal text-slate-400">bis 5 Karten</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="startNewGame()" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-lg rounded-xl shadow-lg shadow-amber-500/20 transition transform active:scale-[0.99]">
+                        Einzelspieler starten
+                    </button>
+                </div>
+
+                <!-- ANSICHT 2: ONLINE-MEHRSPIELER (RAUM ERSTELLEN / BEITRETEN) -->
+                <div id="multi-setup-panel" class="hidden space-y-4">
+                    <div id="multi-error-box" class="hidden bg-red-950/80 border border-red-500/50 text-red-200 text-xs px-3.5 py-2.5 rounded-xl"></div>
+
+                    <!-- Schritt A: Raum erstellen oder beitreten -->
+                    <div id="multi-entry-view" class="space-y-4">
+                        <div class="bg-slate-800/70 border border-white/10 rounded-xl p-4 space-y-3">
+                            <div class="text-sm font-bold text-white">Neuen Spielraum eröffnen</div>
+                            <p class="text-xs text-slate-400">Erstelle einen Raum und teile den Raum-Code mit bis zu 5 Freunden.</p>
+                            <button onclick="createMultiplayerRoom()" id="btn-create-room" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
+                                Raum erstellen
+                            </button>
+                        </div>
+
+                        <div class="relative flex py-1 items-center">
+                            <div class="flex-grow border-t border-slate-700"></div>
+                            <span class="flex-shrink mx-3 text-xs text-slate-500 uppercase">oder beitreten</span>
+                            <div class="flex-grow border-t border-slate-700"></div>
+                        </div>
+
+                        <div class="bg-slate-800/70 border border-white/10 rounded-xl p-4 space-y-3">
+                            <div class="text-sm font-bold text-white">Bestehendem Raum beitreten</div>
+                            <div class="flex gap-2">
+                                <input type="text" id="join-room-code-input" placeholder="CODE (z.B. AB12C)" maxlength="6"
+                                    class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-mono uppercase tracking-widest text-center focus:outline-none focus:border-amber-500">
+                                <button onclick="joinMultiplayerRoom()" id="btn-join-room" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl transition">
+                                    Beitreten
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Schritt B: Warteraum (Lobby) -->
+                    <div id="multi-waiting-room" class="hidden space-y-4">
+                        <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl p-4 text-center">
+                            <div class="text-xs uppercase tracking-wider text-slate-400 mb-1">Raum-Code für deine Kumpels</div>
+                            <div class="flex items-center justify-center gap-2">
+                                <span id="lobby-room-code-display" class="text-2xl sm:text-3xl font-mono font-extrabold tracking-widest text-amber-400">-----</span>
+                                <button type="button" onclick="copyRoomCode()" id="btn-copy-code" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white rounded-lg border border-white/10 transition">
+                                    Kopieren
+                                </button>
+                            </div>
+                            <div class="mt-2 text-[11px] text-slate-500 break-all">Deine Spieler-ID: <span id="lobby-my-uid" class="font-mono text-slate-400">...</span></div>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+                                <span>Verbundene Spieler (<span id="lobby-player-count">1</span>/6)</span>
+                                <span>Min. 3 Spieler</span>
+                            </div>
+                            <div id="lobby-players-list" class="space-y-2 max-h-44 overflow-y-auto">
+                                <!-- Spielerliste wird dynamisch gerendert -->
+                            </div>
+                        </div>
+
+                        <!-- Host-Optionen -->
+                        <div id="host-controls-box" class="hidden space-y-3 pt-2 border-t border-white/10">
+                            <label class="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="fill-bots-checkbox" class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-amber-500">
+                                <span>Fehlende Plätze (unter 3 oder auf Wunsch bis 4) mit KI-Bots auffüllen</span>
+                            </label>
+                            <button onclick="startMultiplayerMatch()" id="btn-start-multi-match" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
+                                Spiel für alle starten
+                            </button>
+                        </div>
+
+                        <div id="guest-waiting-msg" class="hidden text-center text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl py-3 px-4">
+                            Warte darauf, dass der Raum-Ersteller das Spiel startet...
+                        </div>
+
+                        <button type="button" onclick="leaveMultiplayerRoom()" class="w-full py-2 text-xs text-slate-400 hover:text-red-300 transition">
+                            Raum verlassen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/70 rounded-xl p-3.5 text-xs text-slate-300 space-y-1.5 border border-white/5">
+                    <div class="font-semibold text-amber-400">Kurzüberblick der Sonderregeln:</div>
+                    <p>• <strong>Kartenfolge:</strong> 7 &lt; 8 &lt; 9 &lt; Bube &lt; Dame &lt; König &lt; 10 &lt; Ass</p>
+                    <p>• <strong>Farben-Wertigkeit:</strong> Herz (♥) &lt; Pik (♠) &lt; Karo (♦) &lt; Kreuz (♣)</p>
+                    <p>• <strong>Trumpfwahl:</strong> Anhand der 1. Karte wählen – oder die 2. Karte offen für alle entscheiden lassen!</p>
+                    <p>• <strong>Tausch & Stich-Ansage:</strong> Nach dem Austeilen darf 1 Karte getauscht werden, danach folgt die Stich-Ansage (Summe ≠ Kartenanzahl).</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SPIELTISCH -->
+    <main id="game-screen" class="hidden flex-1 flex flex-col justify-between p-2 sm:p-4 max-w-6xl w-full mx-auto relative">
+
+        <!-- Obere / Seitliche KI-Gegner -->
+        <div id="opponents-container" class="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-2 sm:gap-4 my-1">
+            <!-- Wird dynamisch befüllt -->
+        </div>
+
+        <!-- Zentrale Tischfläche (Status, Aktions-Dialoge, Ausgespielte Karten) -->
+        <div class="flex-1 flex flex-col items-center justify-center my-2 relative min-h-[230px]">
+            
+            <!-- Status-Banner -->
+            <div id="game-status-banner" class="bg-black/60 backdrop-blur-md border border-white/15 px-4 py-2 rounded-full text-sm sm:text-base font-medium text-center text-amber-200 shadow-lg mb-4 max-w-md">
+                Runde wird vorbereitet...
+            </div>
+
+            <!-- Aktions-Box: Trumpf wählen (für menschlichen Spieler) -->
+            <div id="trump-selection-box" class="hidden bg-slate-900/95 border-2 border-amber-500 rounded-2xl p-4 sm:p-5 shadow-2xl z-20 max-w-md w-full text-center">
+                <h3 class="text-lg font-bold text-white mb-1">Trumpf anhand deiner 1. Karte ansagen!</h3>
+                <p class="text-xs text-slate-400 mb-3">Du siehst aktuell nur deine erste Karte. Bei <span class="text-red-400 font-semibold">Herz</span> zählen alle Punkte doppelt!</p>
+                
+                <!-- Vorschau der 1. Karte -->
+                <div id="first-card-preview" class="flex justify-center mb-4"></div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3">
+                    <button onclick="selectTrump('hearts')" class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-slate-800 hover:bg-red-950/80 border border-slate-700 hover:border-red-500 transition">
+                        <span class="text-2xl text-red-500 leading-none mb-1">♥</span>
+                        <span class="text-sm font-bold text-white">Herz</span>
+                        <span class="text-[10px] text-red-400 font-semibold">2x Punkte</span>
+                    </button>
+                    <button onclick="selectTrump('spades')" class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-400 transition">
+                        <span class="text-2xl text-slate-200 leading-none mb-1">♠</span>
+                        <span class="text-sm font-bold text-white">Pik</span>
+                        <span class="text-[10px] text-slate-400">Rang 2</span>
+                    </button>
+                    <button onclick="selectTrump('diamonds')" class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-slate-800 hover:bg-red-950/60 border border-slate-700 hover:border-red-400 transition">
+                        <span class="text-2xl text-red-500 leading-none mb-1">♦</span>
+                        <span class="text-sm font-bold text-white">Karo</span>
+                        <span class="text-[10px] text-slate-400">Rang 3</span>
+                    </button>
+                    <button onclick="selectTrump('clubs')" class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-400 transition">
+                        <span class="text-2xl text-slate-200 leading-none mb-1">♣</span>
+                        <span class="text-sm font-bold text-white">Kreuz</span>
+                        <span class="text-[10px] text-amber-400">Höchste Farbe</span>
+                    </button>
+                </div>
+
+                <button id="btn-second-card-trump" onclick="revealSecondCardForTrump()" class="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs sm:text-sm font-bold transition">
+                    Nicht entscheiden → 2. Karte offen aufdecken
+                </button>
+            </div>
+
+            <!-- Aktions-Box: Stiche ansagen (für menschlichen Spieler) -->
+            <div id="bid-selection-box" class="hidden bg-slate-900/95 border-2 border-emerald-500 rounded-2xl p-4 sm:p-5 shadow-2xl z-20 max-w-md w-full text-center">
+                <h3 class="text-lg font-bold text-white mb-1">Wie viele Stiche machst du?</h3>
+                <p id="bid-constraint-info" class="text-xs text-slate-300 mb-3">Bisher angesagt: 0 Stiche.</p>
+                <div id="bid-buttons-container" class="flex flex-wrap justify-center gap-2">
+                    <!-- Buttons 0..N werden dynamisch erzeugt -->
+                </div>
+            </div>
+
+            <!-- Aktions-Box: Optionaler Kartentausch vor der Stich-Ansage -->
+            <div id="exchange-selection-box" class="hidden bg-slate-900/95 border-2 border-sky-500 rounded-2xl p-4 sm:p-5 shadow-2xl z-20 max-w-md w-full text-center">
+                <h3 class="text-lg font-bold text-white mb-1">Möchtest du 1 Karte tauschen?</h3>
+                <p id="exchange-info-text" class="text-xs text-slate-300 mb-4">Klicke unten eine Karte auf deiner Hand an, um sie vor der Stich-Ansage auszutauschen, oder behalte deine Karten.</p>
+                <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
+                    <button id="btn-confirm-exchange" onclick="confirmHumanExchange(true)" disabled class="flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition">
+                        Ausgewählte Karte tauschen
+                    </button>
+                    <button onclick="confirmHumanExchange(false)" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow transition">
+                        Karten behalten
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stich-Ablage auf dem Tisch -->
+            <div id="table-cards-area" class="flex flex-wrap items-center justify-center gap-3 sm:gap-5 min-h-[135px] px-4 py-2">
+                <!-- Ausgespielte Karten des aktuellen Stichs -->
+            </div>
+
+        </div>
+
+        <!-- Unterer Bereich: Spieler-Info & Eigene Handkarten -->
+        <div class="bg-black/45 backdrop-blur-md border border-white/15 rounded-2xl p-3 sm:p-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-white/10">
+                <div class="flex items-center gap-2.5">
+                    <div id="human-turn-indicator" class="w-3 h-3 rounded-full bg-slate-600"></div>
+                    <span id="human-name-label" class="font-bold text-base sm:text-lg text-white">Du</span>
+                    <span id="human-dealer-badge" class="hidden text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-semibold">Trumpf-Ansager</span>
+                </div>
+
+                <div class="flex items-center gap-3 sm:gap-5 text-xs sm:text-sm">
+                    <div class="bg-slate-800/90 px-3 py-1 rounded-lg border border-white/10">
+                        <span class="text-slate-400">Angesagt:</span>
+                        <span id="human-bid-val" class="font-bold text-amber-400 ml-1">-</span>
+                    </div>
+                    <div class="bg-slate-800/90 px-3 py-1 rounded-lg border border-white/10">
+                        <span class="text-slate-400">Stiche:</span>
+                        <span id="human-tricks-val" class="font-bold text-emerald-400 ml-1">0</span>
+                    </div>
+                    <div class="bg-slate-800/90 px-3 py-1 rounded-lg border border-white/10">
+                        <span class="text-slate-400">Punkte:</span>
+                        <span id="human-score-val" class="font-bold text-white ml-1">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Handkarten Container -->
+            <div id="human-hand-container" class="flex flex-wrap justify-center items-center gap-1.5 sm:gap-2.5 min-h-[115px] sm:min-h-[135px] py-1">
+                <!-- Karten des Spielers -->
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: Rundenauswertung -->
+    <div id="round-summary-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-white/20 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 id="summary-title" class="text-xl font-extrabold text-white">Rundenende</h2>
+                    <p id="summary-subtitle" class="text-xs text-slate-400">Auswertung der Stiche & Punkte</p>
+                </div>
+                <span id="summary-trump-badge" class="px-3 py-1 rounded-lg bg-slate-800 text-sm font-bold"></span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400 text-xs uppercase">
+                            <th class="py-2">Spieler</th>
+                            <th class="py-2 text-center">Ansage</th>
+                            <th class="py-2 text-center">Stiche</th>
+                            <th class="py-2 text-right">Runde</th>
+                            <th class="py-2 text-right">Gesamt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table-body" class="divide-y divide-slate-800">
+                        <!-- Dynamisch befüllt -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button id="next-round-btn" onclick="proceedToNextRound()" class="mt-6 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition">
+                Nächste Runde starten
+            </button>
+            <p id="guest-round-wait-hint" class="hidden mt-4 text-center text-xs text-amber-300">
+                Warte auf den Raum-Ersteller für die nächste Runde...
+            </p>
+        </div>
+    </div>
+
+    <!-- MODAL: Gesamter Punktestand -->
+    <div id="score-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-white/20 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-white">Aktuelle Tabelle</h2>
+                <button onclick="toggleModal('score-modal')" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+            </div>
+            <div id="full-scoreboard-content" class="space-y-2">
+                <!-- Dynamisch befüllt -->
+            </div>
+            <button onclick="toggleModal('score-modal')" class="mt-5 w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition">
+                Schließen
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: Spielregeln -->
+    <div id="rules-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-white/20 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                <h2 class="text-xl font-extrabold text-amber-400">Spielregeln: Rauf Runter</h2>
+                <button onclick="toggleModal('rules-modal')" class="text-slate-400 hover:text-white text-2xl font-bold px-2">&times;</button>
+            </div>
+            <div class="space-y-3 text-sm text-slate-300 leading-relaxed">
+                <p><strong class="text-white">1. Karten & Wertigkeit (32 Karten):</strong><br>
+                Die Kartenwerte steigen in folgender Reihenfolge an:<br>
+                <span class="text-amber-300 font-semibold">7 &lt; 8 &lt; 9 &lt; Bube &lt; Dame &lt; König &lt; 10 &lt; Ass</span>.<br>
+                Bei Gleichstand oder ohne Trumpf entscheidet die Wertigkeit der Farben:<br>
+                <span class="text-amber-300 font-semibold">Herz (♥) &lt; Pik (♠) &lt; Karo (♦) &lt; Kreuz (♣)</span>.</p>
+
+                <p><strong class="text-white">2. Rundenverlauf (Rauf & Runter):</strong><br>
+                In Runde 1 erhält jeder Spieler <strong>2 Karten</strong>. Pro Runde steigt die Kartenanzahl um 1 bis zum Maximum (3 Spieler: 9 Karten, 4 Spieler: 7 Karten, 5 Spieler: 6 Karten, 6 Spieler: 5 Karten). Danach geht es wieder schrittweise hinunter bis auf <strong>1 Karte</strong> in der letzten Runde.</p>
+                <p><strong class="text-white">3. Trumpf, Kartentausch & Stich-Ansage:</strong><br>
+                • <strong>Trumpfwahl:</strong> Der Startspieler erhält zuerst nur seine <strong>1. Karte</strong> und kann anhand dieser den Trumpf ansagen. Möchte er sich noch nicht entscheiden, wird seine <strong>2. Karte</strong> offen für alle Spieler aufgedeckt und deren Farbe wird automatisch Trumpf (funktioniert auch in der 1-Karten-Runde durch Aufdecken einer offenen Karte).<br>
+                • <strong>Karten austeilen & Kartentausch (Optional):</strong> Danach erhalten alle Spieler ihre restlichen Karten. Vor der Stich-Ansage darf jeder Spieler einmalig <strong>1 Karte</strong> aus seiner Hand gegen eine neue Karte vom verdeckten Stapel tauschen – oder seine Hand behalten.<br>
+                • <strong>Stich-Ansage:</strong> Anschließend sagt jeder Spieler seine Stiche an. <span class="text-red-400 font-semibold">Wichtig:</span> Die Summe aller angesagten Stiche darf <u>niemals</u> gleich der Kartenanzahl der Runde sein.</p>
+
+                <p><strong class="text-white">4. Bedienpflicht & Stichgewinn:</strong><br>
+                Wird eine Trumpfkarte ausgespielt, müssen alle anderen Spieler ebenfalls Trumpf bedienen, sofern sie eine Trumpfkarte besitzen. Den Stich gewinnt immer die höchste Trumpfkarte – oder, falls kein Trumpf liegt, die Karte mit dem höchsten Gesamtrang (Kartenwert, bei gleichem Wert die höhere Farbe).</p>
+
+                <p><strong class="text-white">5. Punktewertung:</strong><br>
+                • <strong>Ansage exakt getroffen (auch 0 Stiche):</strong> +10 Punkte + 1 Punkt pro angesagtem Stich.<br>
+                • <strong>Ansage verfehlt:</strong> -10 Punkte.<br>
+                • <strong>Herz-Trumpf (♥):</strong> Alle Plus- und Minuspunkte zählen <strong>doppelt</strong> (+20 + 2× Stiche bzw. -20 Punkte).</p>
+            </div>
+            <button onclick="toggleModal('rules-modal')" class="mt-5 w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition">
+                Verstanden
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * RAUF RUNTER - KARTENSPIEL LOGIK
+         * Implementiert alle spezifischen Regeln für Kartenwerte, Farbenrangfolge,
+         * Stich-Ansagebeschränkungen, Trumpf-Bedienpflicht und Herz-Verdopplung.
+         */
+
+        // --- KONSTANTEN & DEFINITIONEN ---
+
+        // Farben aufsteigend nach Wertigkeit: Herz (0) < Pik (1) < Karo (2) < Kreuz (3)
+        const SUITS = {
+            hearts:   { id: 'hearts',   name: 'Herz',  symbol: '♥', rank: 0, colorClass: 'card-red' },
+            spades:   { id: 'spades',   name: 'Pik',   symbol: '♠', rank: 1, colorClass: 'card-black' },
+            diamonds: { id: 'diamonds', name: 'Karo',  symbol: '♦', rank: 2, colorClass: 'card-red' },
+            clubs:    { id: 'clubs',    name: 'Kreuz', symbol: '♣', rank: 3, colorClass: 'card-black' }
+        };
+
+        // Kartenwerte aufsteigend: 7 (0) < 8 (1) < 9 (2) < Bube (3) < Dame (4) < König (5) < 10 (6) < Ass (7)
+        const RANKS = [
+            { id: '7',  label: '7',  value: 0 },
+            { id: '8',  label: '8',  value: 1 },
+            { id: '9',  label: '9',  value: 2 },
+            { id: 'J',  label: 'B',  value: 3 },
+            { id: 'Q',  label: 'D',  value: 4 },
+            { id: 'K',  label: 'K',  value: 5 },
+            { id: '10', label: '10', value: 6 },
+            { id: 'A',  label: 'A',  value: 7 }
+        ];
+
+        const BOT_NAMES = ['Lena', 'Markus', 'Sophie', 'Lukas', 'Hannah'];
+
+        // --- SPIELZUSTAND ---
+        let state = {
+            mode: 'solo',         // 'solo' | 'multi'
+            myPlayerIdx: 0,       // Index des lokalen Spielers im players-Array
+            roomCode: null,
+            hostUid: null,
+            playerCount: 4,
+            players: [],          // { id, uid, name, isHuman, hand: [], bid: null, tricks: 0, score: 0 }
+            roundSequence: [],    // z.B. [2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1]
+            currentRoundIdx: 0,
+            deck: [],             // Verbleibender Kartenstapel der aktuellen Runde
+            pendingHands: [],     // Vollständige zugeteilte Hände vor Abschluss der Trumpfwahl
+            revealedTrumpCard: null, // Falls 2. Karte den Trumpf bestimmt hat, wird sie offen gezeigt
+            trump: null,          // 'hearts' | 'spades' | 'diamonds' | 'clubs'
+            roundStarterIdx: 0,   // Wer sagt Trumpf an & eröffnet die Runde
+            turnIdx: 0,           // Wer ist aktuell am Zug
+            phase: 'LOBBY',       // 'LOBBY' | 'SELECT_TRUMP' | 'BIDDING' | 'EXCHANGE' | 'PLAYING' | 'TRICK_END' | 'ROUND_END' | 'GAME_OVER'
+            currentTrick: [],     // [{ playerIdx, card }]
+            bidsMadeCount: 0,
+            exchangesDoneCount: 0,
+            selectedExchangeCardId: null,
+            aiTimeout: null
+        };
+
+        // --- LOBBY MODUS-UMSCHALTER & HELFER ---
+
+        function switchLobbyMode(mode) {
+            state.mode = mode;
+            const tabSolo = document.getElementById('tab-solo');
+            const tabMulti = document.getElementById('tab-multi');
+            const soloPanel = document.getElementById('solo-setup-panel');
+            const multiPanel = document.getElementById('multi-setup-panel');
+
+            if (mode === 'solo') {
+                tabSolo.className = 'py-2 rounded-lg text-sm font-bold bg-amber-500 text-slate-950 shadow transition';
+                tabMulti.className = 'py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition';
+                soloPanel.classList.remove('hidden');
+                multiPanel.classList.add('hidden');
+            } else {
+                tabMulti.className = 'py-2 rounded-lg text-sm font-bold bg-amber-500 text-slate-950 shadow transition';
+                tabSolo.className = 'py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition';
+                soloPanel.classList.add('hidden');
+                multiPanel.classList.remove('hidden');
+            }
+        }
+
+        function showMultiError(msg) {
+            const box = document.getElementById('multi-error-box');
+            if (!msg) {
+                box.classList.add('hidden');
+                box.textContent = '';
+            } else {
+                box.textContent = msg;
+                box.classList.remove('hidden');
+            }
+        }
+
+        function copyRoomCode() {
+            if (!state.roomCode) return;
+            const tempInput = document.createElement('input');
+            tempInput.value = state.roomCode;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            const btn = document.getElementById('btn-copy-code');
+            const orig = btn.textContent;
+            btn.textContent = 'Kopiert!';
+            setTimeout(() => { btn.textContent = orig; }, 1500);
+        }
+
+        function isLocalPlayer(playerIdx) {
+            return playerIdx === state.myPlayerIdx;
+        }
+
+        function isRoomHost() {
+            if (state.mode === 'solo') return true;
+            return window.mpCurrentUid && state.hostUid === window.mpCurrentUid;
+        }
+
+        function canControlBot(botIdx) {
+            // Im Einzelspieler steuert der lokale Spieler die Bots; im Multiplayer übernimmt nur der Host die Bot-Züge
+            return state.mode === 'solo' || isRoomHost();
+        }
+
+        // --- INITIALISIERUNG & UI HELFER ---
+
+        // Spieleranzahl-Buttons in der Lobby verknüpfen
+        document.querySelectorAll('.count-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.count-btn').forEach(b => {
+                    b.classList.remove('border-2', 'border-amber-500', 'bg-amber-500/20', 'text-amber-300');
+                    b.classList.add('border', 'border-slate-700', 'bg-slate-800', 'text-slate-300');
+                });
+                btn.classList.remove('border', 'border-slate-700', 'bg-slate-800', 'text-slate-300');
+                btn.classList.add('border-2', 'border-amber-500', 'bg-amber-500/20', 'text-amber-300');
+                state.playerCount = parseInt(btn.dataset.count, 10);
+            });
+        });
+
+        function toggleModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (el.classList.contains('hidden')) {
+                if (modalId === 'score-modal') renderFullScoreboard();
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+
+        function setStatusBanner(htmlText) {
+            document.getElementById('game-status-banner').innerHTML = htmlText;
+        }
+
+        // Berechnet die Rundenfolge: Start bei 2 -> hoch bis Max -> runter bis 1
+        function buildRoundSequence(numPlayers) {
+            const maxMap = { 3: 9, 4: 7, 5: 6, 6: 5 };
+            const maxCards = maxMap[numPlayers] || 7;
+            const seq = [];
+            for (let c = 2; c <= maxCards; c++) seq.push(c);
+            for (let c = maxCards - 1; c >= 1; c--) seq.push(c);
+            return seq;
+        }
+
+        // Erzeugt ein gemischtes 32-Karten-Deck
+        function createShuffledDeck() {
+            const deck = [];
+            for (const suitKey of Object.keys(SUITS)) {
+                for (const rankObj of RANKS) {
+                    deck.push({
+                        suit: suitKey,
+                        rankId: rankObj.id,
+                        label: rankObj.label,
+                        value: rankObj.value,
+                        suitRank: SUITS[suitKey].rank,
+                        id: `${suitKey}_${rankObj.id}`
+                    });
+                }
+            }
+            // Fisher-Yates Shuffle
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            return deck;
+        }
+
+        // --- SPIELSTART & RUNDENABLAUF ---
+
+        function startNewGame() {
+            clearTimeout(state.aiTimeout);
+            state.mode = 'solo';
+            state.myPlayerIdx = 0;
+            const humanNameInput = document.getElementById('player-name-input').value.trim();
+            const humanName = humanNameInput || 'Du';
+
+            state.players = [
+                { id: 0, uid: 'local', name: humanName, isHuman: true, hand: [], bid: null, tricks: 0, score: 0 }
+            ];
+
+            for (let i = 1; i < state.playerCount; i++) {
+                state.players.push({
+                    id: i,
+                    uid: `bot_${i}`,
+                    name: BOT_NAMES[i - 1],
+                    isHuman: false,
+                    hand: [],
+                    bid: null,
+                    tricks: 0,
+                    score: 0
+                });
+            }
+
+            state.roundSequence = buildRoundSequence(state.playerCount);
+            state.currentRoundIdx = 0;
+            state.roundStarterIdx = 0; // Mensch beginnt in Runde 1 als Trumpfansager
+
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('header-round-info').classList.remove('hidden');
+            document.getElementById('btn-scoreboard').classList.remove('hidden');
+            document.getElementById('btn-leave-room').classList.add('hidden');
+            document.getElementById('ui-total-rounds').textContent = state.roundSequence.length;
+
+            startRound();
+        }
+
+        function startRound() {
+            clearTimeout(state.aiTimeout);
+            const cardsPerPlayer = state.roundSequence[state.currentRoundIdx];
+            const fullDeck = createShuffledDeck();
+
+            state.trump = null;
+            state.revealedTrumpCard = null;
+            state.currentTrick = [];
+            state.bidsMadeCount = 0;
+            state.exchangesDoneCount = 0;
+            state.selectedExchangeCardId = null;
+            state.turnIdx = state.roundStarterIdx;
+            // Karten für alle Spieler vorbereiten:
+            // Zuerst bekommt der Trumpf-Ansager nur seine 1. Karte, alle anderen erhalten ihre vollständigen Hände erst nach der Trumpfwahl
+            state.pendingHands = [];
+            state.players.forEach((p, idx) => {
+                const fullPlayerHand = fullDeck.slice(idx * cardsPerPlayer, (idx + 1) * cardsPerPlayer);
+                state.pendingHands[idx] = fullPlayerHand;
+                p.bid = null;
+                p.tricks = 0;
+
+                if (idx === state.roundStarterIdx) {
+                    // Trumpf-Ansager sieht vorerst nur seine 1. Karte
+                    p.hand = [fullPlayerHand[0]];
+                } else {
+                    // Restliche Karten werden direkt nach der Trumpfansage ausgeteilt
+                    p.hand = [];
+                }
+            });
+
+            // Restliche Karten im Deck für den Kartentausch aufbewahren
+            state.deck = fullDeck.slice(state.playerCount * cardsPerPlayer);
+
+            // Header UI aktualisieren
+            document.getElementById('ui-round-num').textContent = state.currentRoundIdx + 1;
+            document.getElementById('ui-cards-count').textContent = cardsPerPlayer;
+            document.getElementById('header-trump-box').classList.add('hidden');
+            document.getElementById('header-trump-box').classList.remove('flex');
+            document.getElementById('trump-selection-box').classList.add('hidden');
+            document.getElementById('bid-selection-box').classList.add('hidden');
+            document.getElementById('exchange-selection-box').classList.add('hidden');
+
+            state.phase = 'SELECT_TRUMP';
+            renderAll();
+            syncStateToCloud();
+
+            const starter = state.players[state.roundStarterIdx];
+            if (isLocalPlayer(state.roundStarterIdx)) {
+                setStatusBanner(`Runde ${state.currentRoundIdx + 1}: Wähle Trumpf anhand deiner 1. Karte oder lass die 2. Karte entscheiden!`);
+                showHumanTrumpDialog(starter.hand[0]);
+            } else if (starter.isHuman) {
+                setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> wählt den Trumpf...`);
+            } else {
+                setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> prüft die 1. Karte für die Trumpfwahl...`);
+                if (canControlBot(state.roundStarterIdx)) {
+                    state.aiTimeout = setTimeout(() => {
+                        aiDecideTrumpFromFirstCard(starter);
+                    }, 1100);
+                }
+            }
+        }
+
+        function showHumanTrumpDialog(firstCard) {
+            const preview = document.getElementById('first-card-preview');
+            preview.innerHTML = '';
+            const cardEl = createCardElement(firstCard, false, false);
+            cardEl.classList.add('ring-2', 'ring-amber-400');
+            preview.appendChild(cardEl);
+            document.getElementById('trump-selection-box').classList.remove('hidden');
+        }
+
+        // Sortiert Handkarten nach Farbe und Kartenwert
+        function sortHand(hand) {
+            hand.sort((a, b) => {
+                if (a.suitRank !== b.suitRank) return a.suitRank - b.suitRank;
+                return a.value - b.value;
+            });
+        }
+
+        // --- PHASE 1: TRUMPF WÄHLEN ---
+
+        function dealAllHandsAfterTrump() {
+            state.players.forEach((p, idx) => {
+                p.hand = [...state.pendingHands[idx]];
+                sortHand(p.hand);
+            });
+        }
+
+        function revealSecondCardForTrump() {
+            if (state.phase !== 'SELECT_TRUMP') return;
+            document.getElementById('trump-selection-box').classList.add('hidden');
+
+            const starterIdx = state.roundStarterIdx;
+            const starter = state.players[starterIdx];
+            const starterFullHand = state.pendingHands[starterIdx];
+
+            // 2. Karte des Trumpf-Ansagers nehmen (in der 1-Karten-Runde fallback auf oberste Stapelkarte)
+            let secondCard = starterFullHand.length >= 2 ? starterFullHand[1] : state.deck.shift();
+            state.revealedTrumpCard = secondCard;
+
+            // Alle Spieler erhalten jetzt ihre vollständigen Karten
+            dealAllHandsAfterTrump();
+            renderAll();
+            syncStateToCloud();
+
+            const suitInfo = SUITS[secondCard.suit];
+            setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> deckt die 2. Karte offen auf: <span class="font-bold text-amber-300">${suitInfo.symbol} ${secondCard.label}</span> bestimmt Trumpf <strong>${suitInfo.name}</strong>!`);
+
+            if (isLocalPlayer(starterIdx) || (!starter.isHuman && canControlBot(starterIdx))) {
+                state.aiTimeout = setTimeout(() => {
+                    state.revealedTrumpCard = null;
+                    applySelectedTrump(secondCard.suit);
+                }, 2200);
+            }
+        }
+
+        function selectTrump(suitKey) {
+            if (state.phase !== 'SELECT_TRUMP') return;
+            document.getElementById('trump-selection-box').classList.add('hidden');
+            state.revealedTrumpCard = null;
+            dealAllHandsAfterTrump();
+            applySelectedTrump(suitKey);
+        }
+
+        function applySelectedTrump(suitKey) {
+            state.trump = suitKey;
+
+            const trumpBox = document.getElementById('header-trump-box');
+            const s = SUITS[suitKey];
+            trumpBox.classList.remove('hidden');
+            trumpBox.classList.add('flex');
+            const colorHtml = suitKey === 'hearts' || suitKey === 'diamonds' ? 'text-red-400' : 'text-slate-100';
+            document.getElementById('ui-trump-display').innerHTML = `<span class="${colorHtml} text-lg">${s.symbol}</span> <span class="text-white">${s.name}</span>`;
+            document.getElementById('ui-double-badge').classList.toggle('hidden', suitKey !== 'hearts');
+
+            setStatusBanner(`Trumpf ist <span class="font-bold text-amber-300">${s.symbol} ${s.name}</span>! Alle Karten wurden ausgeteilt.`);
+
+            // Übergang zu Phase 2: Optionaler Kartentausch (noch vor der Stich-Ansage!)
+            state.phase = 'EXCHANGE';
+            state.turnIdx = state.roundStarterIdx;
+            state.exchangesDoneCount = 0;
+            state.selectedExchangeCardId = null;
+
+            renderAll();
+            syncStateToCloud();
+            processNextExchange();
+        }
+
+        function executeCardExchange(player, cardId) {
+            const cardIdx = player.hand.findIndex(c => c.id === cardId);
+            if (cardIdx === -1 || state.deck.length === 0) return null;
+
+            player.hand.splice(cardIdx, 1);
+            const drawnCard = state.deck.shift();
+            player.hand.push(drawnCard);
+            sortHand(player.hand);
+            return drawnCard;
+        }
+
+        // --- PHASE 2: OPTIONALER KARTENTAUSCH VOR DER STICH-ANSAGE ---
+
+        function processNextExchange() {
+            renderAll();
+            const currentPlayer = state.players[state.turnIdx];
+
+            // Falls der verdeckte Stapel leer ist, direkt zur Stich-Ansage übergehen
+            if (state.deck.length === 0) {
+                if (isRoomHost() || isLocalPlayer(state.turnIdx)) {
+                    startBiddingPhase();
+                }
+                return;
+            }
+
+            if (isLocalPlayer(state.turnIdx)) {
+                setStatusBanner(`Kartentausch-Phase: Du darfst optional 1 Karte gegen eine neue tauschen.`);
+                showHumanExchangeDialog();
+            } else if (currentPlayer.isHuman) {
+                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> entscheidet über den Kartentausch...`);
+            } else {
+                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> überlegt, ob eine Karte getauscht wird...`);
+                if (canControlBot(state.turnIdx)) {
+                    state.aiTimeout = setTimeout(() => {
+                        const cardToDrop = aiChooseCardToExchange(currentPlayer, state.trump);
+                        if (cardToDrop && state.deck.length > 0) {
+                            executeCardExchange(currentPlayer, cardToDrop.id);
+                            setStatusBanner(`<span class="text-sky-300 font-bold">${currentPlayer.name}</span> tauscht 1 Karte aus.`);
+                        } else {
+                            setStatusBanner(`<span class="text-slate-200 font-bold">${currentPlayer.name}</span> behält alle Karten.`);
+                        }
+                        syncStateToCloud();
+
+                        state.aiTimeout = setTimeout(() => {
+                            advanceExchangeTurn();
+                        }, 850);
+                    }, 750);
+                }
+            }
+        }
+        function selectCardForExchange(cardId) {
+            if (state.phase !== 'EXCHANGE' || !isLocalPlayer(state.turnIdx)) return;
+
+            state.selectedExchangeCardId = (state.selectedExchangeCardId === cardId) ? null : cardId;
+            const confirmBtn = document.getElementById('btn-confirm-exchange');
+
+            if (state.selectedExchangeCardId) {
+                confirmBtn.disabled = false;
+                confirmBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 shadow transition cursor-pointer';
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition';
+            }
+            renderHumanArea();
+        }
+
+        function confirmHumanExchange(doExchange) {
+            if (state.phase !== 'EXCHANGE' || !isLocalPlayer(state.turnIdx)) return;
+            document.getElementById('exchange-selection-box').classList.add('hidden');
+
+            const human = state.players[state.myPlayerIdx];
+            if (doExchange && state.selectedExchangeCardId && state.deck.length > 0) {
+                const newCard = executeCardExchange(human, state.selectedExchangeCardId);
+                const suitInfo = SUITS[newCard.suit];
+                setStatusBanner(`Karte getauscht! Du hast <span class="text-sky-300 font-bold">${suitInfo.symbol} ${newCard.label}</span> gezogen.`);
+            } else {
+                setStatusBanner(`Du behältst deine Karten.`);
+            }
+
+            state.selectedExchangeCardId = null;
+            renderAll();
+            syncStateToCloud();
+
+            state.aiTimeout = setTimeout(() => {
+                advanceExchangeTurn();
+            }, 900);
+        }
+        function advanceExchangeTurn() {
+            state.exchangesDoneCount++;
+            if (state.exchangesDoneCount >= state.playerCount) {
+                startBiddingPhase();
+            } else {
+                state.turnIdx = (state.turnIdx + 1) % state.playerCount;
+                syncStateToCloud();
+                processNextExchange();
+            }
+        }
+
+        function startBiddingPhase() {
+            state.phase = 'BIDDING';
+            state.turnIdx = state.roundStarterIdx;
+            state.bidsMadeCount = 0;
+            renderAll();
+            syncStateToCloud();
+            processNextBid();
+        }
+
+        // --- PHASE 3: STICHE ANSAGEN ---
+
+        function getCurrentBidSum() {
+            return state.players.reduce((acc, p) => acc + (typeof p.bid === 'number' ? p.bid : 0), 0);
+        }
+
+        function getForbiddenBid() {
+            // Nur der letzte Spieler der Ansagerunde hat eine Einschränkung:
+            // Gesamtsumme aller angesagten Stiche darf NIEMALS gleich der Kartenanzahl der Runde sein!
+            const remainingBidders = state.players.filter(p => p.bid === null).length;
+            if (remainingBidders !== 1) return null;
+
+            const cardsInRound = state.roundSequence[state.currentRoundIdx];
+            const currentSum = getCurrentBidSum();
+            const forbidden = cardsInRound - currentSum;
+            return (forbidden >= 0 && forbidden <= cardsInRound) ? forbidden : null;
+        }
+
+        function processNextBid() {
+            renderAll();
+            const currentPlayer = state.players[state.turnIdx];
+            const cardsInRound = state.roundSequence[state.currentRoundIdx];
+            const currentSum = getCurrentBidSum();
+
+            if (isLocalPlayer(state.turnIdx)) {
+                setStatusBanner(`Deine Stich-Ansage (${cardsInRound} ${cardsInRound === 1 ? 'Karte' : 'Karten'} im Spiel)`);
+                showHumanBidDialog(cardsInRound, currentSum);
+            } else if (currentPlayer.isHuman) {
+                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> sagt seine Stiche an...`);
+            } else {
+                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> überlegt die Stich-Ansage...`);
+                if (canControlBot(state.turnIdx)) {
+                    state.aiTimeout = setTimeout(() => {
+                        const forbidden = getForbiddenBid();
+                        const bid = aiChooseBid(currentPlayer.hand, state.trump, cardsInRound, forbidden);
+                        submitBid(bid);
+                    }, 850);
+                }
+            }
+        }
+
+        function showHumanBidDialog(cardsInRound, currentSum) {
+            const box = document.getElementById('bid-selection-box');
+            const info = document.getElementById('bid-constraint-info');
+            const container = document.getElementById('bid-buttons-container');
+            const forbidden = getForbiddenBid();
+
+            let infoText = `Bisher angesagt: <strong class="text-white">${currentSum}</strong> (Karten pro Spieler: <strong>${cardsInRound}</strong>).`;
+            if (forbidden !== null) {
+                infoText += `<br><span class="text-red-400 font-semibold">Du darfst nicht ${forbidden} ansagen (Gesamtsumme darf nicht ${cardsInRound} sein)!</span>`;
+            }
+            info.innerHTML = infoText;
+
+            container.innerHTML = '';
+            for (let b = 0; b <= cardsInRound; b++) {
+                const isForbidden = (b === forbidden);
+                const btn = document.createElement('button');
+                btn.textContent = b;
+                btn.disabled = isForbidden;
+                if (isForbidden) {
+                    btn.className = 'w-11 h-11 rounded-xl font-bold bg-slate-800/50 text-slate-600 border border-slate-700/50 cursor-not-allowed line-through';
+                    btn.title = `Nicht erlaubt, da die Gesamtsumme sonst ${cardsInRound} wäre`;
+                } else {
+                    btn.className = 'w-11 h-11 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition transform active:scale-95';
+                    btn.onclick = () => submitBid(b);
+                }
+                container.appendChild(btn);
+            }
+
+            box.classList.remove('hidden');
+        }
+
+        function submitBid(bidAmount) {
+            if (state.phase !== 'BIDDING') return;
+
+            const cardsInRound = state.roundSequence[state.currentRoundIdx];
+            const forbidden = getForbiddenBid();
+
+            // Strikte Sicherheitsprüfung: Verbotene Ansage beim letzten Spieler unter keinen Umständen zulassen
+            if (forbidden !== null && bidAmount === forbidden) {
+                bidAmount = (forbidden === 0) ? 1 : forbidden - 1;
+            }
+            bidAmount = Math.max(0, Math.min(cardsInRound, bidAmount));
+
+            document.getElementById('bid-selection-box').classList.add('hidden');
+
+            state.players[state.turnIdx].bid = bidAmount;
+            state.bidsMadeCount++;
+
+            const remainingBidders = state.players.filter(p => p.bid === null).length;
+            if (remainingBidders === 0) {
+                // Alle haben angesagt -> Spielrunde beginnt!
+                startPlayingPhase();
+            } else {
+                state.turnIdx = (state.turnIdx + 1) % state.playerCount;
+                syncStateToCloud();
+                processNextBid();
+            }
+        }
+
+        function startPlayingPhase() {
+            state.phase = 'PLAYING';
+            state.turnIdx = state.roundStarterIdx;
+            renderAll();
+            syncStateToCloud();
+            promptCardPlay();
+        }
+
+        // --- PHASE 4: KARTEN AUSSPIELEN & STICHREGELN ---
+
+        function getLegalCards(hand) {
+            if (state.currentTrick.length === 0) {
+                return hand; // Ausspieler darf jede Karte spielen
+            }
+
+            const trumpPlayedInTrick = state.currentTrick.some(play => play.card.suit === state.trump);
+            if (trumpPlayedInTrick) {
+                const trumpCardsInHand = hand.filter(c => c.suit === state.trump);
+                if (trumpCardsInHand.length > 0) {
+                    return trumpCardsInHand; // Trumpf-Bedienpflicht!
+                }
+            }
+
+            // Ansonsten (kein Trumpf im Stich oder selbst keinen Trumpf mehr) darf jede Karte gelegt werden
+            return hand;
+        }
+
+        function promptCardPlay() {
+            renderAll();
+            const activePlayer = state.players[state.turnIdx];
+
+            if (isLocalPlayer(state.turnIdx)) {
+                const legalCards = getLegalCards(activePlayer.hand);
+                const mustPlayTrump = legalCards.length < activePlayer.hand.length;
+                if (mustPlayTrump) {
+                    setStatusBanner(`Du bist dran! <span class="text-amber-400 font-bold">Trumpf wurde gespielt – du musst Trumpf bedienen!</span>`);
+                } else {
+                    setStatusBanner(`Du bist dran! Wähle eine Karte zum Ausspielen.`);
+                }
+            } else if (activePlayer.isHuman) {
+                setStatusBanner(`<span class="text-white font-bold">${activePlayer.name}</span> ist am Zug...`);
+            } else {
+                setStatusBanner(`<span class="text-white font-bold">${activePlayer.name}</span> spielt eine Karte...`);
+                if (canControlBot(state.turnIdx)) {
+                    state.aiTimeout = setTimeout(() => {
+                        const chosenCard = aiChooseCardToPlay(activePlayer);
+                        playCard(activePlayer.id, chosenCard.id);
+                    }, 750);
+                }
+            }
+        }
+
+        function playCard(playerIdx, cardId) {
+            if (state.phase !== 'PLAYING' || state.turnIdx !== playerIdx) return;
+
+            const player = state.players[playerIdx];
+            const legalCards = getLegalCards(player.hand);
+            const cardObj = legalCards.find(c => c.id === cardId);
+
+            if (!cardObj) return; // Ungültiger Zug
+
+            // Karte aus Hand entfernen und auf den Tisch legen
+            player.hand = player.hand.filter(c => c.id !== cardId);
+            state.currentTrick.push({ playerIdx, card: cardObj });
+
+            renderAll();
+
+            // Prüfen, ob der Stich komplett ist
+            if (state.currentTrick.length === state.playerCount) {
+                state.phase = 'TRICK_END';
+                const winnerPlay = determineTrickWinner(state.currentTrick, state.trump);
+                const winnerPlayer = state.players[winnerPlay.playerIdx];
+                winnerPlayer.tricks++;
+
+                renderAll();
+                syncStateToCloud();
+                setStatusBanner(`<span class="text-emerald-400 font-bold">${winnerPlayer.name}</span> gewinnt den Stich mit ${SUITS[winnerPlay.card.suit].symbol} ${winnerPlay.card.label}!`);
+
+                // Der Spieler, der die letzte Karte gelegt hat, löst nach kurzer Pause den nächsten Stich/Rundenende aus
+                if (isLocalPlayer(playerIdx) || (!player.isHuman && canControlBot(playerIdx))) {
+                    state.aiTimeout = setTimeout(() => {
+                        state.currentTrick = [];
+
+                        // Prüfen, ob noch Karten auf der Hand sind
+                        if (state.players[0].hand.length === 0) {
+                            finishRound();
+                        } else {
+                            // Stichgewinner eröffnet den nächsten Stich
+                            state.turnIdx = winnerPlay.playerIdx;
+                            state.phase = 'PLAYING';
+                            syncStateToCloud();
+                            promptCardPlay();
+                        }
+                    }, 1650);
+                }
+            } else {
+                state.turnIdx = (state.turnIdx + 1) % state.playerCount;
+                syncStateToCloud();
+                promptCardPlay();
+            }
+        }
+
+        /**
+         * Ermittelt den Gewinner eines Stichs gemäß den exakten Spielregeln:
+         * 1. Angesagter Trumpf schlägt alle Nicht-Trumpfkarten (unter Trümpfen entscheidet Kartenwert).
+         * 2. Liegt kein Trumpf im Stich, gewinnt der höchste Kartenwert (7 < 8 < 9 < B < D < K < 10 < Ass).
+         * 3. Haben mehrere Karten den gleichen höchsten Kartenwert, entscheidet die Wertigkeit der Farbe:
+         *    Herz (0) < Pik (1) < Karo (2) < Kreuz (3).
+         */
+        function determineTrickWinner(trickPlays, trumpSuit) {
+            let bestPlay = trickPlays[0];
+
+            for (let i = 1; i < trickPlays.length; i++) {
+                const candidate = trickPlays[i];
+                if (compareCards(candidate.card, bestPlay.card, trumpSuit) > 0) {
+                    bestPlay = candidate;
+                }
+            }
+            return bestPlay;
+        }
+
+        function compareCards(cardA, cardB, trumpSuit) {
+            const aIsTrump = cardA.suit === trumpSuit;
+            const bIsTrump = cardB.suit === trumpSuit;
+
+            if (aIsTrump && !bIsTrump) return 1;
+            if (!aIsTrump && bIsTrump) return -1;
+
+            if (aIsTrump && bIsTrump) {
+                // Beide sind Trumpf -> höherer Kartenwert gewinnt
+                return cardA.value - cardB.value;
+            }
+
+            // Keine der beiden Karten ist Trumpf:
+            // Zuerst Kartenwert vergleichen, bei Gleichstand entscheidet die Farben-Wertigkeit!
+            if (cardA.value !== cardB.value) {
+                return cardA.value - cardB.value;
+            }
+            return cardA.suitRank - cardB.suitRank;
+        }
+
+        // --- PHASE 4: RUNDENAUSWERTUNG & PUNKTESYSTEM ---
+
+        function finishRound() {
+            state.phase = 'ROUND_END';
+            const isHeartTrump = (state.trump === 'hearts');
+            const multiplier = isHeartTrump ? 2 : 1;
+
+            const tbody = document.getElementById('summary-table-body');
+            tbody.innerHTML = '';
+
+            state.players.forEach(p => {
+                const hitExact = (p.tricks === p.bid);
+                let roundPoints = 0;
+
+                if (hitExact) {
+                    // 10 Punkte + angesagte Stiche (bei Herz-Trumpf doppelt)
+                    roundPoints = (10 + p.bid) * multiplier;
+                } else {
+                    // -10 Punkte (bei Herz-Trumpf -20 Punkte)
+                    roundPoints = -10 * multiplier;
+                }
+
+                p.score += roundPoints;
+
+                const tr = document.createElement('tr');
+                const ptsColor = roundPoints >= 0 ? 'text-emerald-400' : 'text-red-400';
+                const ptsSign = roundPoints >= 0 ? '+' : '';
+                tr.innerHTML = `
+                    <td class="py-2.5 font-semibold text-white">${p.name}</td>
+                    <td class="py-2.5 text-center text-slate-300">${p.bid}</td>
+                    <td class="py-2.5 text-center font-bold ${hitExact ? 'text-emerald-400' : 'text-red-400'}">${p.tricks}</td>
+                    <td class="py-2.5 text-right font-bold ${ptsColor}">${ptsSign}${roundPoints}</td>
+                    <td class="py-2.5 text-right font-extrabold text-white">${p.score}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderAll();
+
+            const s = SUITS[state.trump];
+            document.getElementById('summary-trump-badge').innerHTML =
+                `Trumpf: <span class="${state.trump === 'hearts' || state.trump === 'diamonds' ? 'text-red-400' : 'text-white'}">${s.symbol} ${s.name}</span> ${isHeartTrump ? '(2x)' : ''}`;
+
+            const isLastRound = (state.currentRoundIdx >= state.roundSequence.length - 1);
+            const nextBtn = document.getElementById('next-round-btn');
+            const guestHint = document.getElementById('guest-round-wait-hint');
+
+            if (isLastRound) {
+                const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
+                const winner = sortedPlayers[0];
+                document.getElementById('summary-title').textContent = `Spielende! Sieger: ${winner.name}`;
+                document.getElementById('summary-subtitle').textContent = `Endstand nach ${state.roundSequence.length} Runden (${winner.score} Punkte)`;
+                nextBtn.classList.remove('hidden');
+                guestHint.classList.add('hidden');
+                nextBtn.textContent = 'Zurück zur Lobby';
+                nextBtn.onclick = () => {
+                    document.getElementById('round-summary-modal').classList.add('hidden');
+                    if (state.mode === 'multi') {
+                        leaveMultiplayerRoom();
+                    } else {
+                        document.getElementById('game-screen').classList.add('hidden');
+                        document.getElementById('header-round-info').classList.add('hidden');
+                        document.getElementById('header-trump-box').classList.add('hidden');
+                        document.getElementById('btn-scoreboard').classList.add('hidden');
+                        document.getElementById('lobby-screen').classList.remove('hidden');
+                    }
+                };
+            } else {
+                document.getElementById('summary-title').textContent = `Auswertung Runde ${state.currentRoundIdx + 1}`;
+                document.getElementById('summary-subtitle').textContent = isHeartTrump ? 'Herz-Trumpf: Alle Punkte wurden verdoppelt!' : 'Reguläre Punktewertung';
+                if (isRoomHost()) {
+                    nextBtn.classList.remove('hidden');
+                    guestHint.classList.add('hidden');
+                    nextBtn.textContent = `Weiter zu Runde ${state.currentRoundIdx + 2} (${state.roundSequence[state.currentRoundIdx + 1]} ${state.roundSequence[state.currentRoundIdx + 1] === 1 ? 'Karte' : 'Karten'})`;
+                    nextBtn.onclick = proceedToNextRound;
+                } else {
+                    nextBtn.classList.add('hidden');
+                    guestHint.classList.remove('hidden');
+                }
+            }
+
+            syncStateToCloud();
+            document.getElementById('round-summary-modal').classList.remove('hidden');
+        }
+
+        function proceedToNextRound() {
+            if (!isRoomHost()) return;
+            document.getElementById('round-summary-modal').classList.add('hidden');
+            state.currentRoundIdx++;
+            // Trumpf-Ansager wechselt reihum im Uhrzeigersinn
+            state.roundStarterIdx = (state.roundStarterIdx + 1) % state.playerCount;
+            startRound();
+        }
+
+        // --- KÜNSTLICHE INTELLIGENZ (KI-GEGNER) ---
+
+        function aiDecideTrumpFromFirstCard(botPlayer) {
+            const firstCard = botPlayer.hand[0];
+            // Hat die 1. Karte einen hohen Wert (König, 10, Ass) oder ist Kreuz/Karo mit Dame+, sagt KI direkt deren Farbe an
+            if (firstCard.value >= 5 || (firstCard.value >= 4 && firstCard.suit !== 'hearts')) {
+                selectTrump(firstCard.suit);
+            } else {
+                // Ansonsten lässt die KI die 2. Karte offen entscheiden
+                revealSecondCardForTrump();
+            }
+        }
+
+        function aiChooseCardToExchange(botPlayer, trumpSuit) {
+            if (botPlayer.hand.length <= 1) return null;
+
+            // Da die Stich-Ansage erst nach dem Tausch erfolgt, versucht die KI generell
+            // schwache Nicht-Trumpfkarten (7, 8, 9) gegen potenziell bessere Karten/Trümpfe zu tauschen.
+            const weakCards = botPlayer.hand.filter(c => c.suit !== trumpSuit && c.value <= 2);
+            if (weakCards.length > 0 && Math.random() < 0.65) {
+                weakCards.sort((a, b) => a.value - b.value);
+                return weakCards[0];
+            }
+            return null;
+        }
+
+        function aiChooseBid(hand, trumpSuit, cardsInRound, forbiddenBid) {
+            // Schätzt realistische Stichwahrscheinlichkeit basierend auf Trumpfkarten & hohen Non-Trümpfen
+            let expectedTricks = 0;
+            hand.forEach(c => {
+                if (c.suit === trumpSuit) {
+                    if (c.value >= 6) expectedTricks += 0.95;      // Trumpf Ass / 10
+                    else if (c.value >= 4) expectedTricks += 0.75; // Trumpf König / Dame
+                    else expectedTricks += 0.45;                   // Niedriger Trumpf
+                } else {
+                    if (c.value === 7 && c.suitRank >= 2) expectedTricks += 0.55; // Hohes Ass (Karo/Kreuz)
+                    else if (c.value === 7) expectedTricks += 0.4;
+                    else if (c.value === 6 && c.suitRank === 3) expectedTricks += 0.35; // Kreuz 10
+                }
+            });
+
+            let bid = Math.round(expectedTricks);
+            bid = Math.max(0, Math.min(cardsInRound, bid));
+
+            if (forbiddenBid !== null && bid === forbiddenBid) {
+                // Garantiert gültige Ausweich-Ansage wählen
+                const validBids = [];
+                for (let b = 0; b <= cardsInRound; b++) {
+                    if (b !== forbiddenBid) validBids.push(b);
+                }
+                validBids.sort((a, b) => Math.abs(a - expectedTricks) - Math.abs(b - expectedTricks));
+                bid = validBids[0];
+            }
+            return bid;
+        }
+
+        function aiChooseCardToPlay(botPlayer) {
+            const legalCards = getLegalCards(botPlayer.hand);
+            if (legalCards.length === 1) return legalCards[0];
+
+            const needsMoreTricks = botPlayer.tricks < botPlayer.bid;
+
+            // Sortiere legale Karten nach Gesamtstärke (Trumpf > Kartenwert > Farbenrang)
+            const sortedByPower = [...legalCards].sort((a, b) => compareCards(a, b, state.trump));
+
+            if (state.currentTrick.length === 0) {
+                // KI eröffnet den Stich: Wenn noch Stiche benötigt werden, starke Karte spielen; sonst schwache
+                return needsMoreTricks ? sortedByPower[sortedByPower.length - 1] : sortedByPower[0];
+            }
+
+            const currentBestPlay = determineTrickWinner(state.currentTrick, state.trump);
+            const winningOptions = sortedByPower.filter(c => compareCards(c, currentBestPlay.card, state.trump) > 0);
+
+            if (needsMoreTricks && winningOptions.length > 0) {
+                // Spiele die kleinste Karte, die den aktuellen Stich übersticht
+                return winningOptions[0];
+            } else {
+                // Will den Stich nicht (oder kann ihn nicht gewinnen): wirf die niedrigste Karte ab
+                return sortedByPower[0];
+            }
+        }
+
+        // --- UI RENDERING ---
+
+        function renderAll() {
+            renderOpponents();
+            renderTableCards();
+            renderHumanArea();
+        }
+
+        function renderOpponents() {
+            const container = document.getElementById('opponents-container');
+            container.innerHTML = '';
+
+            state.players.forEach((p, idx) => {
+                if (isLocalPlayer(idx)) return;
+
+                const isTurn = (state.turnIdx === idx && (state.phase === 'SELECT_TRUMP' || state.phase === 'BIDDING' || state.phase === 'EXCHANGE' || state.phase === 'PLAYING'));
+                const isStarter = (state.roundStarterIdx === idx);
+
+                const card = document.createElement('div');
+                card.className = `bg-slate-900/80 backdrop-blur-md rounded-xl p-2.5 sm:p-3 border transition flex flex-col justify-between min-w-[145px] sm:min-w-[175px] ${
+                    isTurn ? 'border-amber-400 shadow-lg shadow-amber-500/20 ring-1 ring-amber-400' : 'border-white/10'
+                }`;
+
+                // Kleine Kartenrücken für verbleibende Handkarten
+                let miniCardsHtml = '';
+                for (let c = 0; c < p.hand.length; c++) {
+                    miniCardsHtml += `<div class="w-3.5 h-5 rounded-sm bg-blue-700 border border-white/70 -ml-1.5 first:ml-0 shadow-sm"></div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-1 mb-1.5">
+                        <div class="flex items-center gap-1.5 truncate">
+                            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 ${isTurn ? 'bg-amber-400 animate-ping' : 'bg-slate-600'}"></span>
+                            <span class="font-bold text-sm text-white truncate">${p.name}</span>
+                        </div>
+                        ${isStarter ? '<span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold" title="Trumpf-Ansager">T</span>' : ''}
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-slate-300 bg-black/30 rounded-lg px-2 py-1 mb-2">
+                        <span>Ansage: <strong class="text-amber-400">${p.bid !== null ? p.bid : '-'}</strong></span>
+                        <span>Stiche: <strong class="text-emerald-400">${p.tricks}</strong></span>
+                        <span>Pkt: <strong class="text-white">${p.score}</strong></span>
+                    </div>
+                    <div class="flex items-center justify-center h-5">
+                        ${miniCardsHtml || '<span class="text-[10px] text-slate-500">Keine Karten</span>'}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderTableCards() {
+            const area = document.getElementById('table-cards-area');
+            area.innerHTML = '';
+
+            // Falls während der Trumpfwahl die 2. Karte offen für alle aufgedeckt wurde:
+            if (state.phase === 'SELECT_TRUMP' && state.revealedTrumpCard) {
+                const starter = state.players[state.roundStarterIdx];
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col items-center gap-1.5 played-card-anim';
+
+                const cardEl = createCardElement(state.revealedTrumpCard, false, false);
+                cardEl.classList.add('ring-4', 'ring-amber-400');
+
+                const label = document.createElement('span');
+                label.className = 'text-xs font-bold px-3 py-1 rounded-full bg-amber-500 text-slate-950 shadow';
+                label.textContent = `2. Karte von ${starter.name} (Trumpf!)`;
+
+                wrapper.appendChild(cardEl);
+                wrapper.appendChild(label);
+                area.appendChild(wrapper);
+                return;
+            }
+
+            if (state.currentTrick.length === 0) {
+                area.innerHTML = `<div class="text-xs text-emerald-200/40 border border-dashed border-emerald-200/20 rounded-xl px-6 py-8">Kartenablage</div>`;
+                return;
+            }
+
+            const currentWinningPlay = state.trump ? determineTrickWinner(state.currentTrick, state.trump) : null;
+
+            state.currentTrick.forEach(play => {
+                const player = state.players[play.playerIdx];
+                const suitInfo = SUITS[play.card.suit];
+                const isWinner = currentWinningPlay && currentWinningPlay.playerIdx === play.playerIdx;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col items-center gap-1.5 played-card-anim';
+
+                const cardEl = createCardElement(play.card, false, false);
+                if (isWinner && state.currentTrick.length > 1) {
+                    cardEl.classList.add('ring-2', 'ring-emerald-400');
+                }
+
+                const label = document.createElement('span');
+                label.className = `text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    isWinner ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40' : 'bg-black/50 text-slate-300'
+                }`;
+                label.textContent = player.name;
+
+                wrapper.appendChild(cardEl);
+                wrapper.appendChild(label);
+                area.appendChild(wrapper);
+            });
+        }
+
+        function renderHumanArea() {
+            const human = state.players[state.myPlayerIdx];
+            if (!human) return;
+
+            document.getElementById('human-name-label').textContent = human.name;
+            document.getElementById('human-bid-val').textContent = human.bid !== null ? human.bid : '-';
+            document.getElementById('human-tricks-val').textContent = human.tricks;
+            document.getElementById('human-score-val').textContent = human.score;
+            document.getElementById('human-dealer-badge').classList.toggle('hidden', state.roundStarterIdx !== state.myPlayerIdx);
+
+            const isHumanTurn = (isLocalPlayer(state.turnIdx) && (state.phase === 'SELECT_TRUMP' || state.phase === 'BIDDING' || state.phase === 'EXCHANGE' || state.phase === 'PLAYING'));
+            const indicator = document.getElementById('human-turn-indicator');
+            indicator.className = isHumanTurn ? 'w-3 h-3 rounded-full bg-amber-400 animate-ping' : 'w-3 h-3 rounded-full bg-slate-600';
+
+            const handContainer = document.getElementById('human-hand-container');
+            handContainer.innerHTML = '';
+
+            const canPlayNow = (state.phase === 'PLAYING' && isLocalPlayer(state.turnIdx));
+            const canExchangeNow = (state.phase === 'EXCHANGE' && isLocalPlayer(state.turnIdx));
+            const legalCards = canPlayNow ? getLegalCards(human.hand) : [];
+
+            human.hand.forEach(card => {
+                const isPlayable = (canPlayNow && legalCards.some(lc => lc.id === card.id)) || canExchangeNow;
+                const isDisabled = canPlayNow && !isPlayable;
+
+                const cardEl = createCardElement(card, isPlayable, isDisabled);
+                if (canExchangeNow && state.selectedExchangeCardId === card.id) {
+                    cardEl.classList.add('exchange-selected');
+                }
+
+                if (canPlayNow && isPlayable) {
+                    cardEl.onclick = () => playCard(state.myPlayerIdx, card.id);
+                } else if (canExchangeNow) {
+                    cardEl.onclick = () => selectCardForExchange(card.id);
+                }
+                handContainer.appendChild(cardEl);
+            });
+        }
+
+        function createCardElement(card, isPlayable, isDisabled) {
+            const suitInfo = SUITS[card.suit];
+            const isTrump = (state.trump === card.suit);
+
+            const el = document.createElement('div');
+            el.className = `playing-card ${suitInfo.colorClass} ${isPlayable ? 'playable' : ''} ${isDisabled ? 'disabled' : ''} ${isTrump ? 'trump-card' : ''}`;
+
+            el.innerHTML = `
+                <div class="flex flex-col items-start leading-none">
+                    <span class="font-extrabold text-base sm:text-lg tracking-tighter">${card.label}</span>
+                    <span class="text-sm sm:text-base">${suitInfo.symbol}</span>
+                </div>
+                <div class="self-center text-2xl sm:text-3xl leading-none select-none">
+                    ${suitInfo.symbol}
+                </div>
+                <div class="flex flex-col items-end leading-none rotate-180">
+                    <span class="font-extrabold text-base sm:text-lg tracking-tighter">${card.label}</span>
+                    <span class="text-sm sm:text-base">${suitInfo.symbol}</span>
+                </div>
+            `;
+            return el;
+        }
+
+        function renderFullScoreboard() {
+            const container = document.getElementById('full-scoreboard-content');
+            container.innerHTML = '';
+
+            const sorted = [...state.players].sort((a, b) => b.score - a.score);
+            sorted.forEach((p, rankIdx) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-slate-800/80 px-4 py-3 rounded-xl border border-white/10';
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-slate-700 text-xs font-bold flex items-center justify-center text-amber-400">${rankIdx + 1}</span>
+                        <span class="font-bold text-white">${p.name}</span>
+                    </div>
+                    <div class="font-extrabold text-lg ${p.score >= 0 ? 'text-emerald-400' : 'text-red-400'}">
+                        ${p.score} Pkt.
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // Platzhalter für Cloud-Sync (wird vom Online-Modul überschrieben, sobald geladen)
+        function syncStateToCloud() {}
+    </script>
+
+    <!-- ONLINE-MEHRSPIELER ENGINE (ECHTZEIT-LOBBY & SYNCHRONISATION) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'rauf-runter-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+
+        let db = null;
+        let auth = null;
+        let unsubscribeRoom = null;
+        let lastAppliedVersion = -1;
+        let isApplyingRemote = false;
+
+        async function initOnlineServices() {
+            if (!firebaseConfig) {
+                console.warn("Online-Konfiguration nicht gefunden.");
+                return null;
+            }
+            if (!db) {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            }
+            if (!auth.currentUser) {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            }
+            window.mpCurrentUid = auth.currentUser.uid;
+            return auth.currentUser;
+        }
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 5; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function getRoomDocRef(code) {
+            return doc(db, 'artifacts', appId, 'public', 'data', 'rauf_runter_rooms', code);
+        }
+
+        window.createMultiplayerRoom = async function () {
+            showMultiError('');
+            const btn = document.getElementById('btn-create-room');
+            btn.disabled = true;
+            btn.textContent = 'Erstelle Raum...';
+
+            try {
+                const user = await initOnlineServices();
+                if (!user) throw new Error('Online-Dienst nicht verfügbar.');
+
+                const playerName = document.getElementById('player-name-input').value.trim() || 'Spieler 1';
+                const code = generateRoomCode();
+                const roomRef = getRoomDocRef(code);
+
+                const roomData = {
+                    roomCode: code,
+                    hostUid: user.uid,
+                    status: 'WAITING',
+                    version: 1,
+                    lobbyPlayers: [
+                        { uid: user.uid, name: playerName }
+                    ],
+                    gameStateJson: ''
+                };
+
+                await setDoc(roomRef, roomData);
+                subscribeToRoom(code);
+            } catch (err) {
+                console.error(err);
+                showMultiError('Raum konnte nicht erstellt werden: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Raum erstellen';
+            }
+        };
+
+        window.joinMultiplayerRoom = async function () {
+            showMultiError('');
+            const codeInput = document.getElementById('join-room-code-input').value.trim().toUpperCase();
+            if (codeInput.length < 4) {
+                showMultiError('Bitte gib einen gültigen Raum-Code ein.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-join-room');
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            try {
+                const user = await initOnlineServices();
+                if (!user) throw new Error('Online-Dienst nicht verfügbar.');
+
+                const roomRef = getRoomDocRef(codeInput);
+                const snap = await getDoc(roomRef);
+
+                if (!snap.exists()) {
+                    showMultiError('Kein Raum mit diesem Code gefunden.');
+                    return;
+                }
+
+                const data = snap.data();
+                const lobbyPlayers = data.lobbyPlayers || [];
+                const alreadyIn = lobbyPlayers.some(p => p.uid === user.uid);
+
+                if (!alreadyIn) {
+                    if (data.status !== 'WAITING') {
+                        showMultiError('Dieses Spiel läuft bereits.');
+                        return;
+                    }
+                    if (lobbyPlayers.length >= 6) {
+                        showMultiError('Der Raum ist bereits voll (max. 6 Spieler).');
+                        return;
+                    }
+
+                    const playerName = document.getElementById('player-name-input').value.trim() || `Spieler ${lobbyPlayers.length + 1}`;
+                    lobbyPlayers.push({ uid: user.uid, name: playerName });
+                    await updateDoc(roomRef, {
+                        lobbyPlayers,
+                        version: (data.version || 1) + 1
+                    });
+                }
+
+                subscribeToRoom(codeInput);
+            } catch (err) {
+                console.error(err);
+                showMultiError('Beitritt fehlgeschlagen: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Beitreten';
+            }
+        };
+
+        function subscribeToRoom(code) {
+            if (unsubscribeRoom) unsubscribeRoom();
+            state.mode = 'multi';
+            state.roomCode = code;
+            lastAppliedVersion = -1;
+
+            document.getElementById('multi-entry-view').classList.add('hidden');
+            document.getElementById('multi-waiting-room').classList.remove('hidden');
+            document.getElementById('lobby-room-code-display').textContent = code;
+            document.getElementById('lobby-my-uid').textContent = window.mpCurrentUid || '';
+
+            const roomRef = getRoomDocRef(code);
+            unsubscribeRoom = onSnapshot(roomRef, (snap) => {
+                if (!snap.exists()) {
+                    showMultiError('Der Spielraum wurde geschlossen.');
+                    leaveMultiplayerRoom();
+                    return;
+                }
+
+                const data = snap.data();
+                state.hostUid = data.hostUid;
+
+                if (data.status === 'WAITING') {
+                    renderWaitingLobby(data);
+                } else if (data.status === 'PLAYING' && data.gameStateJson) {
+                    if (data.version !== lastAppliedVersion) {
+                        lastAppliedVersion = data.version;
+                        applyRemoteGameState(JSON.parse(data.gameStateJson));
+                    }
+                }
+            }, (error) => {
+                console.error("Snapshot-Fehler:", error);
+                showMultiError('Verbindungsproblem zum Spielraum.');
+            });
+        }
+
+        function renderWaitingLobby(data) {
+            const list = document.getElementById('lobby-players-list');
+            const players = data.lobbyPlayers || [];
+            document.getElementById('lobby-player-count').textContent = players.length;
+
+            list.innerHTML = '';
+            players.forEach((p, idx) => {
+                const isMe = p.uid === window.mpCurrentUid;
+                const isHost = p.uid === data.hostUid;
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between bg-slate-800/90 px-3.5 py-2.5 rounded-xl border border-white/10';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center justify-center">${idx + 1}</span>
+                        <span class="font-bold text-sm text-white">${p.name} ${isMe ? '<span class="text-xs text-amber-400">(Du)</span>' : ''}</span>
+                    </div>
+                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${isHost ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-700 text-slate-300'}">
+                        ${isHost ? 'Host' : 'Bereit'}
+                    </span>
+                `;
+                list.appendChild(item);
+            });
+
+            const amIHost = data.hostUid === window.mpCurrentUid;
+            document.getElementById('host-controls-box').classList.toggle('hidden', !amIHost);
+            document.getElementById('guest-waiting-msg').classList.toggle('hidden', amIHost);
+        }
+
+        window.startMultiplayerMatch = async function () {
+            if (!state.roomCode || !isRoomHost()) return;
+            showMultiError('');
+
+            try {
+                const roomRef = getRoomDocRef(state.roomCode);
+                const snap = await getDoc(roomRef);
+                if (!snap.exists()) return;
+
+                const data = snap.data();
+                const lobbyPlayers = [...(data.lobbyPlayers || [])];
+                const fillBots = document.getElementById('fill-bots-checkbox').checked;
+
+                if (lobbyPlayers.length < 3 && !fillBots) {
+                    showMultiError('Für Rauf Runter werden mindestens 3 Spieler benötigt. Aktiviere das Auffüllen mit KI-Bots oder lade noch Freunde ein.');
+                    return;
+                }
+
+                state.players = lobbyPlayers.map((lp, idx) => ({
+                    id: idx,
+                    uid: lp.uid,
+                    name: lp.name,
+                    isHuman: true,
+                    hand: [],
+                    bid: null,
+                    tricks: 0,
+                    score: 0
+                }));
+
+                if (fillBots) {
+                    const targetCount = Math.max(4, state.players.length);
+                    let botIdx = 0;
+                    while (state.players.length < targetCount && state.players.length < 6) {
+                        state.players.push({
+                            id: state.players.length,
+                            uid: `bot_${state.players.length}`,
+                            name: `${BOT_NAMES[botIdx % BOT_NAMES.length]} (KI)`,
+                            isHuman: false,
+                            hand: [],
+                            bid: null,
+                            tricks: 0,
+                            score: 0
+                        });
+                        botIdx++;
+                    }
+                }
+
+                state.playerCount = state.players.length;
+                state.myPlayerIdx = state.players.findIndex(p => p.uid === window.mpCurrentUid);
+                state.roundSequence = buildRoundSequence(state.playerCount);
+                state.currentRoundIdx = 0;
+                state.roundStarterIdx = 0;
+
+                document.getElementById('lobby-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                document.getElementById('header-round-info').classList.remove('hidden');
+                document.getElementById('btn-scoreboard').classList.remove('hidden');
+                document.getElementById('btn-leave-room').classList.remove('hidden');
+                document.getElementById('ui-total-rounds').textContent = state.roundSequence.length;
+
+                await updateDoc(roomRef, { status: 'PLAYING' });
+                startRound();
+            } catch (err) {
+                console.error(err);
+                showMultiError('Spielstart fehlgeschlagen: ' + err.message);
+            }
+        };
+
+        window.syncStateToCloud = async function () {
+            if (state.mode !== 'multi' || !state.roomCode || isApplyingRemote || !db) return;
+
+            try {
+                const serializableState = {
+                    playerCount: state.playerCount,
+                    players: state.players,
+                    roundSequence: state.roundSequence,
+                    currentRoundIdx: state.currentRoundIdx,
+                    deck: state.deck,
+                    pendingHands: state.pendingHands,
+                    revealedTrumpCard: state.revealedTrumpCard,
+                    trump: state.trump,
+                    roundStarterIdx: state.roundStarterIdx,
+                    turnIdx: state.turnIdx,
+                    phase: state.phase,
+                    currentTrick: state.currentTrick,
+                    bidsMadeCount: state.bidsMadeCount,
+                    exchangesDoneCount: state.exchangesDoneCount
+                };
+
+                const nextVersion = (lastAppliedVersion > 0 ? lastAppliedVersion : 1) + 1;
+                lastAppliedVersion = nextVersion;
+
+                const roomRef = getRoomDocRef(state.roomCode);
+                await updateDoc(roomRef, {
+                    status: 'PLAYING',
+                    version: nextVersion,
+                    gameStateJson: JSON.stringify(serializableState)
+                });
+            } catch (err) {
+                console.error('Fehler beim Synchronisieren:', err);
+            }
+        };
+
+        function applyRemoteGameState(remote) {
+            isApplyingRemote = true;
+            clearTimeout(state.aiTimeout);
+
+            try {
+                state.playerCount = remote.playerCount;
+                state.players = remote.players;
+                state.roundSequence = remote.roundSequence;
+                state.currentRoundIdx = remote.currentRoundIdx;
+                state.deck = remote.deck || [];
+                state.pendingHands = remote.pendingHands || [];
+                state.revealedTrumpCard = remote.revealedTrumpCard || null;
+                state.trump = remote.trump;
+                state.roundStarterIdx = remote.roundStarterIdx;
+                state.turnIdx = remote.turnIdx;
+                state.phase = remote.phase;
+                state.currentTrick = remote.currentTrick || [];
+                state.bidsMadeCount = remote.bidsMadeCount || 0;
+                state.exchangesDoneCount = remote.exchangesDoneCount || 0;
+
+                const myIdx = state.players.findIndex(p => p.uid === window.mpCurrentUid);
+                if (myIdx !== -1) state.myPlayerIdx = myIdx;
+
+                // UI-Ansichten umschalten
+                document.getElementById('lobby-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                document.getElementById('header-round-info').classList.remove('hidden');
+                document.getElementById('btn-scoreboard').classList.remove('hidden');
+                document.getElementById('btn-leave-room').classList.remove('hidden');
+
+                document.getElementById('ui-round-num').textContent = state.currentRoundIdx + 1;
+                document.getElementById('ui-total-rounds').textContent = state.roundSequence.length;
+                document.getElementById('ui-cards-count').textContent = state.roundSequence[state.currentRoundIdx];
+
+                // Trumpf-Anzeige aktualisieren
+                const trumpBox = document.getElementById('header-trump-box');
+                if (state.trump) {
+                    const s = SUITS[state.trump];
+                    trumpBox.classList.remove('hidden');
+                    trumpBox.classList.add('flex');
+                    const colorHtml = state.trump === 'hearts' || state.trump === 'diamonds' ? 'text-red-400' : 'text-slate-100';
+                    document.getElementById('ui-trump-display').innerHTML = `<span class="${colorHtml} text-lg">${s.symbol}</span> <span class="text-white">${s.name}</span>`;
+                    document.getElementById('ui-double-badge').classList.toggle('hidden', state.trump !== 'hearts');
+                } else {
+                    trumpBox.classList.add('hidden');
+                    trumpBox.classList.remove('flex');
+                }
+
+                // Dialoge zunächst schließen
+                document.getElementById('trump-selection-box').classList.add('hidden');
+                document.getElementById('bid-selection-box').classList.add('hidden');
+                document.getElementById('exchange-selection-box').classList.add('hidden');
+                if (state.phase !== 'ROUND_END') {
+                    document.getElementById('round-summary-modal').classList.add('hidden');
+                }
+
+                renderAll();
+
+                // Aktive Phase für den jeweiligen Client fortsetzen
+                if (state.phase === 'SELECT_TRUMP') {
+                    const starter = state.players[state.roundStarterIdx];
+                    if (state.revealedTrumpCard) {
+                        const suitInfo = SUITS[state.revealedTrumpCard.suit];
+                        setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> deckt die 2. Karte offen auf: <span class="font-bold text-amber-300">${suitInfo.symbol} ${state.revealedTrumpCard.label}</span> bestimmt Trumpf <strong>${suitInfo.name}</strong>!`);
+                    } else if (isLocalPlayer(state.roundStarterIdx)) {
+                        setStatusBanner(`Runde ${state.currentRoundIdx + 1}: Wähle Trumpf anhand deiner 1. Karte oder lass die 2. Karte entscheiden!`);
+                        showHumanTrumpDialog(starter.hand[0]);
+                    } else {
+                        setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> wählt den Trumpf...`);
+                    }
+                } else if (state.phase === 'EXCHANGE') {
+                    processNextExchange();
+                } else if (state.phase === 'BIDDING') {
+                    processNextBid();
+                } else if (state.phase === 'PLAYING') {
+                    promptCardPlay();
+                } else if (state.phase === 'TRICK_END') {
+                    const winnerPlay = determineTrickWinner(state.currentTrick, state.trump);
+                    const winnerPlayer = state.players[winnerPlay.playerIdx];
+                    setStatusBanner(`<span class="text-emerald-400 font-bold">${winnerPlayer.name}</span> gewinnt den Stich mit ${SUITS[winnerPlay.card.suit].symbol} ${winnerPlay.card.label}!`);
+                } else if (state.phase === 'ROUND_END') {
+                    renderRemoteRoundSummary();
+                }
+            } finally {
+                isApplyingRemote = false;
+            }
+        }
+
+        function renderRemoteRoundSummary() {
+            const isHeartTrump = (state.trump === 'hearts');
+            const tbody = document.getElementById('summary-table-body');
+            tbody.innerHTML = '';
+
+            state.players.forEach(p => {
+                const hitExact = (p.tricks === p.bid);
+                const multiplier = isHeartTrump ? 2 : 1;
+                const roundPoints = hitExact ? (10 + p.bid) * multiplier : -10 * multiplier;
+                const tr = document.createElement('tr');
+                const ptsColor = roundPoints >= 0 ? 'text-emerald-400' : 'text-red-400';
+                const ptsSign = roundPoints >= 0 ? '+' : '';
+                tr.innerHTML = `
+                    <td class="py-2.5 font-semibold text-white">${p.name}</td>
+                    <td class="py-2.5 text-center text-slate-300">${p.bid}</td>
+                    <td class="py-2.5 text-center font-bold ${hitExact ? 'text-emerald-400' : 'text-red-400'}">${p.tricks}</td>
+                    <td class="py-2.5 text-right font-bold ${ptsColor}">${ptsSign}${roundPoints}</td>
+                    <td class="py-2.5 text-right font-extrabold text-white">${p.score}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const s = SUITS[state.trump];
+            document.getElementById('summary-trump-badge').innerHTML =
+                `Trumpf: <span class="${state.trump === 'hearts' || state.trump === 'diamonds' ? 'text-red-400' : 'text-white'}">${s.symbol} ${s.name}</span> ${isHeartTrump ? '(2x)' : ''}`;
+
+            const isLastRound = (state.currentRoundIdx >= state.roundSequence.length - 1);
+            const nextBtn = document.getElementById('next-round-btn');
+            const guestHint = document.getElementById('guest-round-wait-hint');
+
+            if (isLastRound) {
+                const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
+                const winner = sortedPlayers[0];
+                document.getElementById('summary-title').textContent = `Spielende! Sieger: ${winner.name}`;
+                document.getElementById('summary-subtitle').textContent = `Endstand nach ${state.roundSequence.length} Runden (${winner.score} Punkte)`;
+                nextBtn.classList.remove('hidden');
+                guestHint.classList.add('hidden');
+                nextBtn.textContent = 'Zurück zur Lobby';
+                nextBtn.onclick = leaveMultiplayerRoom;
+            } else {
+                document.getElementById('summary-title').textContent = `Auswertung Runde ${state.currentRoundIdx + 1}`;
+                document.getElementById('summary-subtitle').textContent = isHeartTrump ? 'Herz-Trumpf: Alle Punkte wurden verdoppelt!' : 'Reguläre Punktewertung';
+                if (isRoomHost()) {
+                    nextBtn.classList.remove('hidden');
+                    guestHint.classList.add('hidden');
+                    nextBtn.textContent = `Weiter zu Runde ${state.currentRoundIdx + 2}`;
+                    nextBtn.onclick = proceedToNextRound;
+                } else {
+                    nextBtn.classList.add('hidden');
+                    guestHint.classList.remove('hidden');
+                }
+            }
+
+            document.getElementById('round-summary-modal').classList.remove('hidden');
+        }
+
+        window.leaveMultiplayerRoom = function () {
+            if (unsubscribeRoom) {
+                unsubscribeRoom();
+                unsubscribeRoom = null;
+            }
+            clearTimeout(state.aiTimeout);
+            state.roomCode = null;
+            state.phase = 'LOBBY';
+
+            document.getElementById('round-summary-modal').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('header-round-info').classList.add('hidden');
+            document.getElementById('header-trump-box').classList.add('hidden');
+            document.getElementById('btn-scoreboard').classList.add('hidden');
+            document.getElementById('btn-leave-room').classList.add('hidden');
+
+            document.getElementById('multi-waiting-room').classList.add('hidden');
+            document.getElementById('multi-entry-view').classList.remove('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+        };
+    </script>
+</body>
+</html>
