@@ -12,8 +12,11 @@
             background: radial-gradient(circle at center, #1b4332 0%, #081c15 100%);
             color: #f8fafc;
             min-height: 100vh;
+            min-height: 100dvh;
             overflow-x: hidden;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         /* Spielkarten Design & Animationen */
@@ -587,17 +590,34 @@
 
         function copyRoomCode() {
             if (!state.roomCode) return;
-            const tempInput = document.createElement('input');
-            tempInput.value = state.roomCode;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-
             const btn = document.getElementById('btn-copy-code');
             const orig = btn.textContent;
-            btn.textContent = 'Kopiert!';
-            setTimeout(() => { btn.textContent = orig; }, 1500);
+            const showCopied = () => {
+                btn.textContent = 'Kopiert!';
+                setTimeout(() => { btn.textContent = orig; }, 1500);
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(state.roomCode).then(showCopied).catch(() => {
+                    fallbackCopyText(state.roomCode, showCopied);
+                });
+            } else {
+                fallbackCopyText(state.roomCode, showCopied);
+            }
+        }
+
+        function fallbackCopyText(text, onDone) {
+            try {
+                const tempInput = document.createElement('input');
+                tempInput.value = text;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                if (onDone) onDone();
+            } catch (e) {
+                console.warn('Kopieren nicht unterstützt:', e);
+            }
         }
 
         function isLocalPlayer(playerIdx) {
@@ -901,6 +921,20 @@
                         const cardToDrop = aiChooseCardToExchange(currentPlayer, state.trump);
                         if (cardToDrop && state.deck.length > 0) {
                             executeCardExchange(currentPlayer, cardToDrop.id);
+                            setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> hat 1 Karte getauscht.`);
+                        } else {
+                            setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> behält die Karten.`);
+                        }
+                        renderAll();
+                        syncStateToCloud();
+                        state.aiTimeout = setTimeout(() => {
+                            advanceExchangeTurn();
+                        }, 700);
+                    }, 850);
+                }
+            }
+        }
+
         function showHumanExchangeDialog() {
             const box = document.getElementById('exchange-selection-box');
             const confirmBtn = document.getElementById('btn-confirm-exchange');
@@ -909,7 +943,7 @@
             state.selectedExchangeCardId = null;
             confirmBtn.disabled = true;
             confirmBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition';
-            infoText.textContent = 'Klicke unten eine Karte auf deiner Hand an, um sie vor der Stich-Ansage auszutauschen, oder behalte deine Karten.';
+            infoText.textContent = 'Tippe unten eine Karte auf deiner Hand an, um sie vor der Stich-Ansage auszutauschen, oder behalte deine Karten.';
 
             box.classList.remove('hidden');
             renderHumanArea();
@@ -952,6 +986,7 @@
                 advanceExchangeTurn();
             }, 900);
         }
+
         function advanceExchangeTurn() {
             state.exchangesDoneCount++;
             if (state.exchangesDoneCount >= state.playerCount) {
