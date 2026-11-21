@@ -5,11 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rauf Runter - Das Kartenspiel</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --wood-dark: #2c1608;
+            --wood-mid: #4a2511;
+            --wood-light: #6b381a;
+            --felt-center: #1e6b43;
+            --felt-edge: #0f3d24;
+            --card-ivory: #fcfaf5;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at center, #1b4332 0%, #081c15 100%);
+            background: radial-gradient(ellipse at center, #3b1e0e 0%, #1a0c04 100%);
             color: #f8fafc;
             min-height: 100vh;
             min-height: 100dvh;
@@ -19,26 +28,150 @@
             touch-action: manipulation;
         }
 
-        /* Spielkarten Design & Animationen */
+        body.in-game-lock {
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        /* Authentischer Canasta-Holztisch mit Filzfläche */
+        .casino-table-rim {
+            background: linear-gradient(145deg, var(--wood-light), var(--wood-dark) 55%, var(--wood-mid));
+            border-radius: 26px;
+            padding: 6px;
+            box-shadow:
+                0 22px 50px rgba(0, 0, 0, 0.75),
+                inset 0 2px 4px rgba(255, 220, 180, 0.25),
+                inset 0 -4px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        @media (min-width: 640px) {
+            .casino-table-rim {
+                border-radius: 64px;
+                padding: 14px;
+            }
+        }
+
+        .casino-felt {
+            background:
+                radial-gradient(ellipse at center, rgba(255, 255, 255, 0.08) 0%, transparent 65%),
+                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 2px, transparent 2px, transparent 6px),
+                radial-gradient(ellipse at center, var(--felt-center) 0%, #155233 62%, var(--felt-edge) 100%);
+            border-radius: 20px;
+            box-shadow:
+                inset 0 0 40px rgba(0, 0, 0, 0.65),
+                inset 0 0 0 2px rgba(212, 175, 55, 0.35);
+            position: relative;
+        }
+
+        @media (min-width: 640px) {
+            .casino-felt {
+                border-radius: 52px;
+            }
+        }
+
+        .table-watermark {
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 0.14em;
+            color: rgba(255, 255, 255, 0.07);
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+        }
+
+        /* Klassisches Deutsches Turnierblatt (4-Ecken-Index & doppelköpfige Bildkarten) */
         .playing-card {
-            width: 74px;
-            height: 108px;
-            background: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45), inset 0 0 0 1px #e2e8f0;
+            width: 66px;
+            height: 102px;
+            background: linear-gradient(170deg, #ffffff 0%, #f8f6f0 100%);
+            border-radius: 7px;
+            box-shadow:
+                0 3px 8px rgba(0, 0, 0, 0.48),
+                0 1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 0 0 1px #cfccc2;
+            position: relative;
+            transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, filter 0.18s ease;
+            overflow: hidden;
+            flex-shrink: 0;
+            font-family: Georgia, 'Times New Roman', serif;
+        }
+
+        @media (min-width: 640px) {
+            .playing-card {
+                width: 88px;
+                height: 134px;
+                border-radius: 9px;
+            }
+        }
+
+        .playing-card.table-mini-card {
+            width: 56px;
+            height: 86px;
+        }
+
+        @media (min-width: 640px) {
+            .playing-card.table-mini-card {
+                width: 78px;
+                height: 118px;
+            }
+        }
+
+        .casino-felt {
+            background:
+                radial-gradient(ellipse at center, rgba(255, 255, 255, 0.08) 0%, transparent 65%),
+                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 2px, transparent 2px, transparent 6px),
+                radial-gradient(ellipse at center, var(--felt-center) 0%, #155233 62%, var(--felt-edge) 100%);
+            border-radius: 28px;
+            box-shadow:
+                inset 0 0 40px rgba(0, 0, 0, 0.65),
+                inset 0 0 0 2px rgba(212, 175, 55, 0.35);
+            position: relative;
+        }
+
+        @media (min-width: 640px) {
+            .casino-felt {
+                border-radius: 52px;
+            }
+        }
+
+        .table-watermark {
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 0.14em;
+            color: rgba(255, 255, 255, 0.07);
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+        }
+
+        /* Klassische Spielkarten (Canasta-Stil) */
+        .playing-card {
+            width: 72px;
+            height: 106px;
+            background: linear-gradient(165deg, #ffffff 0%, var(--card-ivory) 100%);
+            border-radius: 9px;
+            box-shadow:
+                0 4px 10px rgba(0, 0, 0, 0.45),
+                0 1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 0 0 1px #d6d3cb;
             position: relative;
             transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, filter 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
         }
 
         @media (min-width: 640px) {
             .playing-card {
                 width: 88px;
                 height: 128px;
-                padding: 8px;
+                border-radius: 10px;
+            }
+        }
+
+        .playing-card.table-mini-card {
+            width: 64px;
+            height: 94px;
+        }
+
+        @media (min-width: 640px) {
+            .playing-card.table-mini-card {
+                width: 78px;
+                height: 114px;
             }
         }
 
@@ -47,55 +180,68 @@
         }
 
         .playing-card.playable:hover {
-            transform: translateY(-14px) scale(1.04);
-            box-shadow: 0 14px 24px rgba(0, 0, 0, 0.6), 0 0 0 2px #fbbf24;
-            z-index: 20;
+            transform: translateY(-16px) scale(1.05);
+            box-shadow: 0 16px 26px rgba(0, 0, 0, 0.65), 0 0 0 2px #fbbf24;
+            z-index: 30 !important;
         }
 
         .playing-card.disabled {
-            filter: brightness(0.65) contrast(0.9);
+            filter: brightness(0.68) saturate(0.75);
             cursor: not-allowed;
         }
 
         .playing-card.trump-card {
-            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35), inset 0 0 0 2px #f59e0b;
+            box-shadow:
+                0 5px 14px rgba(245, 158, 11, 0.45),
+                inset 0 0 0 2px #f59e0b;
         }
 
         .playing-card.exchange-selected {
-            transform: translateY(-16px) scale(1.05);
-            box-shadow: 0 14px 24px rgba(56, 189, 248, 0.5), 0 0 0 3px #38bdf8;
-            z-index: 25;
+            transform: translateY(-18px) scale(1.06);
+            box-shadow: 0 16px 26px rgba(56, 189, 248, 0.55), 0 0 0 3px #38bdf8;
+            z-index: 35 !important;
         }
 
         .card-red {
-            color: #dc2626;
+            color: #c81e1e;
         }
 
         .card-black {
-            color: #0f172a;
+            color: #111827;
         }
 
-        /* Kartenrücken für Gegner */
-        .card-back {
-            width: 36px;
-            height: 52px;
-            background: repeating-linear-gradient(
-                45deg,
-                #1e3a8a,
-                #1e3a8a 5px,
-                #1d4ed8 5px,
-                #1d4ed8 10px
-            );
-            border: 2px solid #ffffff;
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        /* Klassischer Ornament-Kartenrücken */
+        .classic-card-back {
+            background-color: #1e3a8a;
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.12) 0, rgba(255, 255, 255, 0.12) 2px, transparent 2px, transparent 6px),
+                repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.12) 0, rgba(255, 255, 255, 0.12) 2px, transparent 2px, transparent 6px);
+            background-size: 8px 8px, 12px 12px, 12px 12px;
+            border: 2px solid #f8fafc;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 0 0 1px #93c5fd;
+        }
+
+        /* Sitzplätze rund um den Tisch */
+        .seat-pod {
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.88) 0%, rgba(9, 13, 24, 0.94) 100%);
+            backdrop-filter: blur(8px);
+            border: 1.5px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+            transition: all 0.25s ease;
+        }
+
+        .seat-pod.active-turn {
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.45), 0 10px 24px rgba(0, 0, 0, 0.7);
+            transform: scale(1.03);
         }
 
         /* Tisch-Animation beim Ausspielen */
         @keyframes cardDrop {
             0% {
                 opacity: 0;
-                transform: scale(1.35) translateY(-20px);
+                transform: scale(1.3) translateY(-18px);
             }
             100% {
                 opacity: 1;
@@ -107,7 +253,7 @@
             animation: cardDrop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Custom Scrollbar für Punktetabelle */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -124,297 +270,340 @@
 </head>
 <body class="flex flex-col justify-between">
 
-    <!-- Top Navigation / Statusleiste -->
-    <header class="w-full bg-black/40 backdrop-blur-md border-b border-white/10 px-4 py-3 flex flex-wrap items-center justify-between gap-2 z-30">
-        <div class="flex items-center gap-3">
-            <div class="bg-amber-500 text-slate-950 font-extrabold px-3 py-1 rounded-lg text-lg tracking-tight shadow">
-                ♠♥ Rauf Runter ♦♣
+    <!-- Top Navigation / Holz-Statusleiste im Canasta-Stil -->
+    <header class="w-full bg-[#1d0e06]/90 backdrop-blur-md border-b border-amber-500/25 px-2.5 sm:px-5 py-1.5 sm:py-2.5 flex items-center justify-between gap-1.5 z-30 shadow-lg flex-shrink-0">
+        <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <div class="bg-gradient-to-b from-amber-400 to-amber-600 text-slate-950 font-extrabold px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl text-xs sm:text-lg tracking-tight shadow border border-amber-200/60 flex items-center gap-1 flex-shrink-0">
+                <span class="text-red-800">♥</span>
+                <span style="font-family: 'Playfair Display', serif;">Rauf Runter</span>
+                <span>♠</span>
             </div>
-            <div id="header-round-info" class="hidden text-sm sm:text-base font-medium text-emerald-200 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-700/50">
-                Runde <span id="ui-round-num">1</span>/<span id="ui-total-rounds">9</span> • <span id="ui-cards-count" class="font-bold text-white">2</span> Karten
+            <div id="header-round-info" class="hidden text-[11px] sm:text-sm font-semibold text-amber-100 bg-black/45 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-amber-500/30 truncate">
+                R.<span id="ui-round-num" class="text-amber-400 font-bold">1</span>/<span id="ui-total-rounds">9</span> • <span id="ui-cards-count" class="font-bold text-white">2</span>K
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <!-- Trumpf Anzeige -->
-            <div id="header-trump-box" class="hidden items-center gap-2 bg-slate-900/90 border border-amber-500/40 px-3 py-1 rounded-lg shadow">
-                <span class="text-xs uppercase tracking-wider text-slate-400">Trumpf:</span>
-                <span id="ui-trump-display" class="font-bold text-sm sm:text-base flex items-center gap-1">-</span>
-                <span id="ui-double-badge" class="hidden text-[11px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded animate-pulse">2x PUNKTE</span>
+            <div id="header-trump-box" class="hidden items-center gap-1 sm:gap-2 bg-black/60 border border-amber-400/50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl shadow">
+                <span class="hidden sm:inline text-[11px] uppercase tracking-wider text-amber-200/75">Trumpf:</span>
+                <span id="ui-trump-display" class="font-bold text-xs sm:text-base flex items-center gap-1">-</span>
+                <span id="ui-double-badge" class="hidden text-[9px] sm:text-[10px] bg-red-600 text-white font-bold px-1 py-0.5 rounded animate-pulse">2x</span>
             </div>
 
-            <button onclick="toggleModal('rules-modal')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium rounded-lg transition border border-white/10">
+            <button onclick="toggleModal('rules-modal')" class="px-2 sm:px-3 py-1 sm:py-1.5 bg-amber-950/70 hover:bg-amber-900/80 text-amber-100 text-[11px] sm:text-sm font-medium rounded-lg sm:rounded-xl transition border border-amber-500/25">
                 Regeln
             </button>
-            <button id="btn-scoreboard" onclick="toggleModal('score-modal')" class="hidden px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs sm:text-sm font-medium rounded-lg transition border border-amber-500/30">
-                Punktestand
+            <button id="btn-scoreboard" onclick="toggleModal('score-modal')" class="hidden px-2 sm:px-3 py-1 sm:py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] sm:text-sm font-semibold rounded-lg sm:rounded-xl transition border border-amber-400/40">
+                Tabelle
             </button>
-            <button id="btn-leave-room" onclick="leaveMultiplayerRoom()" class="hidden px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs sm:text-sm font-medium rounded-lg transition border border-red-500/30">
-                Verlassen
+            <button id="btn-leave-room" onclick="leaveMultiplayerRoom()" class="hidden px-2 sm:px-3 py-1 sm:py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[11px] sm:text-sm font-medium rounded-lg sm:rounded-xl transition border border-red-500/30">
+                Raus
             </button>
         </div>
     </header>
 
     <!-- STARTBILDSCHIRM / LOBBY -->
-    <main id="lobby-screen" class="flex-1 flex items-center justify-center p-4">
-        <div class="max-w-lg w-full bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl p-6 sm:p-8 shadow-2xl">
-            <div class="text-center mb-5">
-                <div class="inline-flex justify-center gap-2 text-3xl mb-2">
-                    <span class="text-red-500">♥</span>
-                    <span class="text-slate-200">♠</span>
-                    <span class="text-red-500">♦</span>
-                    <span class="text-slate-200">♣</span>
-                </div>
-                <h1 class="text-3xl font-extrabold text-white tracking-tight">Rauf Runter</h1>
-                <p class="text-slate-400 text-sm mt-1">Das taktische Stich-Kartenspiel mit 32 Karten</p>
-            </div>
-
-            <!-- Modus-Umschalter: Einzelspieler vs. Online-Mehrspieler -->
-            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950/80 rounded-xl border border-white/10 mb-5">
-                <button type="button" id="tab-solo" onclick="switchLobbyMode('solo')" class="py-2 rounded-lg text-sm font-bold bg-amber-500 text-slate-950 shadow transition">
-                    Gegen Computer
-                </button>
-                <button type="button" id="tab-multi" onclick="switchLobbyMode('multi')" class="py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition">
-                    Online mit Freunden
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1.5">Dein Spielername</label>
-                    <input type="text" id="player-name-input" value="Spieler" maxlength="14"
-                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500 transition">
-                </div>
-
-                <!-- ANSICHT 1: EINZELSPIELER -->
-                <div id="solo-setup-panel" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Anzahl der Spieler (inkl. dir)</label>
-                        <div class="grid grid-cols-4 gap-2" id="player-count-selector">
-                            <button type="button" data-count="3" class="count-btn py-3 rounded-xl font-bold border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
-                                3 Spieler<span class="block text-[11px] font-normal text-slate-400">bis 9 Karten</span>
-                            </button>
-                            <button type="button" data-count="4" class="count-btn py-3 rounded-xl font-bold border-2 border-amber-500 bg-amber-500/20 text-amber-300 transition">
-                                4 Spieler<span class="block text-[11px] font-normal text-amber-200/80">bis 7 Karten</span>
-                            </button>
-                            <button type="button" data-count="5" class="count-btn py-3 rounded-xl font-bold border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
-                                5 Spieler<span class="block text-[11px] font-normal text-slate-400">bis 6 Karten</span>
-                            </button>
-                            <button type="button" data-count="6" class="count-btn py-3 rounded-xl font-bold border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
-                                6 Spieler<span class="block text-[11px] font-normal text-slate-400">bis 5 Karten</span>
-                            </button>
-                        </div>
+    <main id="lobby-screen" class="flex-1 flex items-center justify-center p-3 sm:p-5">
+        <div class="max-w-lg w-full casino-table-rim">
+            <div class="casino-felt p-5 sm:p-7">
+                <div class="text-center mb-5">
+                    <div class="inline-flex justify-center items-center gap-2 bg-black/35 px-4 py-1.5 rounded-full border border-amber-400/30 text-2xl mb-2 shadow-inner">
+                        <span class="text-red-500">♥</span>
+                        <span class="text-white">♠</span>
+                        <span class="text-red-500">♦</span>
+                        <span class="text-white">♣</span>
                     </div>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight drop-shadow" style="font-family: 'Playfair Display', serif;">Rauf Runter</h1>
+                    <p class="text-emerald-100/80 text-xs sm:text-sm mt-1">Klassisches Stich-Kartenspiel am runden Spieltisch</p>
+                </div>
 
-                    <button onclick="startNewGame()" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-lg rounded-xl shadow-lg shadow-amber-500/20 transition transform active:scale-[0.99]">
-                        Einzelspieler starten
+                <!-- Modus-Umschalter: Einzelspieler vs. Online-Mehrspieler -->
+                <div class="grid grid-cols-2 gap-2 p-1 bg-black/45 rounded-xl border border-white/15 mb-5">
+                    <button type="button" id="tab-solo" onclick="switchLobbyMode('solo')" class="py-2 rounded-lg text-sm font-bold bg-amber-500 text-slate-950 shadow transition">
+                        Gegen Computer
+                    </button>
+                    <button type="button" id="tab-multi" onclick="switchLobbyMode('multi')" class="py-2 rounded-lg text-sm font-bold text-emerald-100/75 hover:text-white transition">
+                        Online mit Freunden
                     </button>
                 </div>
 
-                <!-- ANSICHT 2: ONLINE-MEHRSPIELER (RAUM ERSTELLEN / BEITRETEN) -->
-                <div id="multi-setup-panel" class="hidden space-y-4">
-                    <div id="multi-error-box" class="hidden bg-red-950/80 border border-red-500/50 text-red-200 text-xs px-3.5 py-2.5 rounded-xl"></div>
-
-                    <!-- Schritt A: Raum erstellen oder beitreten -->
-                    <div id="multi-entry-view" class="space-y-4">
-                        <div class="bg-slate-800/70 border border-white/10 rounded-xl p-4 space-y-3">
-                            <div class="text-sm font-bold text-white">Neuen Spielraum eröffnen</div>
-                            <p class="text-xs text-slate-400">Erstelle einen Raum und teile den Raum-Code mit bis zu 5 Freunden.</p>
-                            <button onclick="createMultiplayerRoom()" id="btn-create-room" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
-                                Raum erstellen
-                            </button>
-                        </div>
-
-                        <div class="relative flex py-1 items-center">
-                            <div class="flex-grow border-t border-slate-700"></div>
-                            <span class="flex-shrink mx-3 text-xs text-slate-500 uppercase">oder beitreten</span>
-                            <div class="flex-grow border-t border-slate-700"></div>
-                        </div>
-
-                        <div class="bg-slate-800/70 border border-white/10 rounded-xl p-4 space-y-3">
-                            <div class="text-sm font-bold text-white">Bestehendem Raum beitreten</div>
-                            <div class="flex gap-2">
-                                <input type="text" id="join-room-code-input" placeholder="CODE (z.B. AB12C)" maxlength="6"
-                                    class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-mono uppercase tracking-widest text-center focus:outline-none focus:border-amber-500">
-                                <button onclick="joinMultiplayerRoom()" id="btn-join-room" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl transition">
-                                    Beitreten
-                                </button>
-                            </div>
-                        </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider font-semibold text-amber-200/90 mb-1.5">Dein Spielername am Tisch</label>
+                        <input type="text" id="player-name-input" value="Spieler" maxlength="14"
+                            class="w-full bg-black/45 border border-amber-400/30 rounded-xl px-4 py-2.5 text-white font-semibold focus:outline-none focus:border-amber-400 transition">
                     </div>
 
-                    <!-- Schritt B: Warteraum (Lobby) -->
-                    <div id="multi-waiting-room" class="hidden space-y-4">
-                        <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl p-4 text-center">
-                            <div class="text-xs uppercase tracking-wider text-slate-400 mb-1">Raum-Code für deine Kumpels</div>
-                            <div class="flex items-center justify-center gap-2">
-                                <span id="lobby-room-code-display" class="text-2xl sm:text-3xl font-mono font-extrabold tracking-widest text-amber-400">-----</span>
-                                <button type="button" onclick="copyRoomCode()" id="btn-copy-code" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white rounded-lg border border-white/10 transition">
-                                    Kopieren
+                    <!-- ANSICHT 1: EINZELSPIELER -->
+                    <div id="solo-setup-panel" class="space-y-4">
+                        <div>
+                            <label class="block text-xs uppercase tracking-wider font-semibold text-amber-200/90 mb-2">Tischgröße (Spieleranzahl)</label>
+                            <div class="grid grid-cols-4 gap-2" id="player-count-selector">
+                                <button type="button" data-count="3" class="count-btn py-2.5 rounded-xl font-bold border border-white/15 bg-black/40 text-emerald-100 hover:bg-black/60 transition">
+                                    3 Spieler<span class="block text-[10px] font-normal text-emerald-200/70">bis 9 Karten</span>
+                                </button>
+                                <button type="button" data-count="4" class="count-btn py-2.5 rounded-xl font-bold border-2 border-amber-400 bg-amber-500/25 text-amber-300 transition shadow">
+                                    4 Spieler<span class="block text-[10px] font-normal text-amber-200/90">bis 7 Karten</span>
+                                </button>
+                                <button type="button" data-count="5" class="count-btn py-2.5 rounded-xl font-bold border border-white/15 bg-black/40 text-emerald-100 hover:bg-black/60 transition">
+                                    5 Spieler<span class="block text-[10px] font-normal text-emerald-200/70">bis 6 Karten</span>
+                                </button>
+                                <button type="button" data-count="6" class="count-btn py-2.5 rounded-xl font-bold border border-white/15 bg-black/40 text-emerald-100 hover:bg-black/60 transition">
+                                    6 Spieler<span class="block text-[10px] font-normal text-emerald-200/70">bis 5 Karten</span>
                                 </button>
                             </div>
-                            <div class="mt-2 text-[11px] text-slate-500 break-all">Deine Spieler-ID: <span id="lobby-my-uid" class="font-mono text-slate-400">...</span></div>
                         </div>
 
-                        <div>
-                            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-                                <span>Verbundene Spieler (<span id="lobby-player-count">1</span>/6)</span>
-                                <span>Min. 3 Spieler</span>
-                            </div>
-                            <div id="lobby-players-list" class="space-y-2 max-h-44 overflow-y-auto">
-                                <!-- Spielerliste wird dynamisch gerendert -->
-                            </div>
-                        </div>
-
-                        <!-- Host-Optionen -->
-                        <div id="host-controls-box" class="hidden space-y-3 pt-2 border-t border-white/10">
-                            <label class="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="fill-bots-checkbox" class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-amber-500">
-                                <span>Fehlende Plätze (unter 3 oder auf Wunsch bis 4) mit KI-Bots auffüllen</span>
-                            </label>
-                            <button onclick="startMultiplayerMatch()" id="btn-start-multi-match" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
-                                Spiel für alle starten
-                            </button>
-                        </div>
-
-                        <div id="guest-waiting-msg" class="hidden text-center text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl py-3 px-4">
-                            Warte darauf, dass der Raum-Ersteller das Spiel startet...
-                        </div>
-
-                        <button type="button" onclick="leaveMultiplayerRoom()" class="w-full py-2 text-xs text-slate-400 hover:text-red-300 transition">
-                            Raum verlassen
+                        <button onclick="startNewGame()" class="w-full py-3.5 bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-extrabold text-lg rounded-xl shadow-lg shadow-black/40 border border-amber-200/60 transition transform active:scale-[0.99]">
+                            Am Tisch Platz nehmen
                         </button>
                     </div>
-                </div>
 
-                <div class="bg-slate-800/70 rounded-xl p-3.5 text-xs text-slate-300 space-y-1.5 border border-white/5">
-                    <div class="font-semibold text-amber-400">Kurzüberblick der Sonderregeln:</div>
-                    <p>• <strong>Kartenfolge:</strong> 7 &lt; 8 &lt; 9 &lt; Bube &lt; Dame &lt; König &lt; 10 &lt; Ass</p>
-                    <p>• <strong>Farben-Wertigkeit:</strong> Herz (♥) &lt; Pik (♠) &lt; Karo (♦) &lt; Kreuz (♣)</p>
-                    <p>• <strong>Trumpfwahl:</strong> Anhand der 1. Karte wählen – oder die 2. Karte offen für alle entscheiden lassen!</p>
-                    <p>• <strong>Tausch & Stich-Ansage:</strong> Nach dem Austeilen darf 1 Karte getauscht werden, danach folgt die Stich-Ansage (Summe ≠ Kartenanzahl).</p>
+                    <!-- ANSICHT 2: ONLINE-MEHRSPIELER (RAUM ERSTELLEN / BEITRETEN) -->
+                    <div id="multi-setup-panel" class="hidden space-y-4">
+                        <div id="multi-error-box" class="hidden bg-red-950/90 border border-red-400/60 text-red-100 text-xs px-3.5 py-2.5 rounded-xl"></div>
+
+                        <!-- Schritt A: Raum erstellen oder beitreten -->
+                        <div id="multi-entry-view" class="space-y-3.5">
+                            <div class="bg-black/40 border border-white/15 rounded-xl p-4 space-y-2.5">
+                                <div class="text-sm font-bold text-white">Neuen Spieltisch eröffnen</div>
+                                <p class="text-xs text-emerald-100/75">Erstelle einen Tisch und teile den Raum-Code mit bis zu 5 Kollegen.</p>
+                                <button onclick="createMultiplayerRoom()" id="btn-create-room" class="w-full py-3 bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
+                                    Tisch erstellen
+                                </button>
+                            </div>
+
+                            <div class="relative flex py-0.5 items-center">
+                                <div class="flex-grow border-t border-white/15"></div>
+                                <span class="flex-shrink mx-3 text-xs text-emerald-200/60 uppercase">oder beitreten</span>
+                                <div class="flex-grow border-t border-white/15"></div>
+                            </div>
+
+                            <div class="bg-black/40 border border-white/15 rounded-xl p-4 space-y-2.5">
+                                <div class="text-sm font-bold text-white">Bestehendem Tisch beitreten</div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="join-room-code-input" placeholder="CODE (z.B. AB12C)" maxlength="6"
+                                        class="flex-1 bg-black/55 border border-amber-400/30 rounded-xl px-3.5 py-2.5 text-white font-mono uppercase tracking-widest text-center focus:outline-none focus:border-amber-400">
+                                    <button onclick="joinMultiplayerRoom()" id="btn-join-room" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl transition">
+                                        Beitreten
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Schritt B: Warteraum (Lobby) -->
+                        <div id="multi-waiting-room" class="hidden space-y-4">
+                            <div class="bg-black/55 border border-amber-400/40 rounded-xl p-4 text-center">
+                                <div class="text-xs uppercase tracking-wider text-amber-200/75 mb-1">Tisch-Code für deine Kollegen</div>
+                                <div class="flex items-center justify-center gap-2">
+                                    <span id="lobby-room-code-display" class="text-2xl sm:text-3xl font-mono font-extrabold tracking-widest text-amber-400">-----</span>
+                                    <button type="button" onclick="copyRoomCode()" id="btn-copy-code" class="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-xs font-semibold text-white rounded-lg border border-white/15 transition">
+                                        Kopieren
+                                    </button>
+                                </div>
+                                <div class="mt-2 text-[11px] text-emerald-200/50 break-all">Deine ID: <span id="lobby-my-uid" class="font-mono">...</span></div>
+                            </div>
+
+                            <div>
+                                <div class="flex items-center justify-between text-xs text-emerald-100/80 mb-2">
+                                    <span>Spieler am Tisch (<span id="lobby-player-count">1</span>/6)</span>
+                                    <span>Min. 3 Spieler</span>
+                                </div>
+                                <div id="lobby-players-list" class="space-y-2 max-h-44 overflow-y-auto">
+                                    <!-- Spielerliste wird dynamisch gerendert -->
+                                </div>
+                            </div>
+
+                            <!-- Host-Optionen -->
+                            <div id="host-controls-box" class="hidden space-y-3 pt-2 border-t border-white/15">
+                                <label class="flex items-center gap-2.5 text-xs text-emerald-100 cursor-pointer">
+                                    <input type="checkbox" id="fill-bots-checkbox" class="rounded bg-black/50 border-white/30 text-amber-500 focus:ring-amber-500">
+                                    <span>Freie Plätze mit Computer-Spielern auffüllen</span>
+                                </label>
+                                <button onclick="startMultiplayerMatch()" id="btn-start-multi-match" class="w-full py-3 bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
+                                    Runde starten
+                                </button>
+                            </div>
+
+                            <div id="guest-waiting-msg" class="hidden text-center text-xs text-amber-300 bg-black/40 border border-amber-400/30 rounded-xl py-3 px-4">
+                                Warte darauf, dass der Tisch-Ersteller das Spiel startet...
+                            </div>
+
+                            <button type="button" onclick="leaveMultiplayerRoom()" class="w-full py-2 text-xs text-emerald-200/70 hover:text-red-300 transition">
+                                Tisch verlassen
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-black/35 rounded-xl p-3 text-xs text-emerald-100/85 space-y-1 border border-white/10">
+                        <div class="font-bold text-amber-300">Spielregeln im Überblick:</div>
+                        <p>• <strong>Kartenfolge:</strong> 7 &lt; 8 &lt; 9 &lt; Bube &lt; Dame &lt; König &lt; 10 &lt; Ass</p>
+                        <p>• <strong>Farbenrang:</strong> Herz (♥) &lt; Pik (♠) &lt; Karo (♦) &lt; Kreuz (♣)</p>
+                        <p>• <strong>Ablauf:</strong> Trumpf (1. oder 2. Karte) → Austeilen → 1 Karte tauschen (optional) → Stiche ansagen (Summe ≠ Kartenanzahl).</p>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- SPIELTISCH -->
-    <main id="game-screen" class="hidden flex-1 flex flex-col justify-between p-2 sm:p-4 max-w-6xl w-full mx-auto relative">
+    <!-- SPIELTISCH IM CANASTA-LOOK (KOMPAKT FÜR SMARTPHONE OHNE SCROLLEN) -->
+    <main id="game-screen" class="hidden flex-1 min-h-0 flex flex-col justify-between p-1 sm:p-2.5 max-w-6xl w-full mx-auto relative overflow-hidden">
 
-        <!-- Obere / Seitliche KI-Gegner -->
-        <div id="opponents-container" class="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-2 sm:gap-4 my-1">
-            <!-- Wird dynamisch befüllt -->
-        </div>
+        <!-- Der grüne Spieltisch mit Holzrahmen -->
+        <div class="casino-table-rim flex-1 min-h-0 flex flex-col justify-between">
+            <div class="casino-felt flex-1 min-h-0 flex flex-col justify-between p-1.5 sm:p-3.5 overflow-hidden">
 
-        <!-- Zentrale Tischfläche (Status, Aktions-Dialoge, Ausgespielte Karten) -->
-        <div class="flex-1 flex flex-col items-center justify-center my-2 relative min-h-[230px]">
-            
-            <!-- Status-Banner -->
-            <div id="game-status-banner" class="bg-black/60 backdrop-blur-md border border-white/15 px-4 py-2 rounded-full text-sm sm:text-base font-medium text-center text-amber-200 shadow-lg mb-4 max-w-md">
-                Runde wird vorbereitet...
-            </div>
-
-            <!-- Aktions-Box: Trumpf wählen (für menschlichen Spieler) -->
-            <div id="trump-selection-box" class="hidden bg-slate-900/95 border-2 border-amber-500 rounded-2xl p-4 sm:p-5 shadow-2xl z-20 max-w-md w-full text-center">
-                <h3 class="text-lg font-bold text-white mb-1">Trumpf anhand deiner 1. Karte ansagen!</h3>
-                <p class="text-xs text-slate-400 mb-3">Du siehst aktuell nur deine erste Karte. Bei <span class="text-red-400 font-semibold">Herz</span> zählen alle Punkte doppelt!</p>
-                
-                <!-- Vorschau der 1. Karte -->
-                <div id="first-card-preview" class="flex justify-center mb-4"></div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3">
-                    <button onclick="selectTrump('hearts')" class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-slate-800 hover:bg-red-950/80 border border-slate-700 hover:border-red-500 transition">
-                        <span class="text-2xl text-red-500 leading-none mb-1">♥</span>
-                        <span class="text-sm font-bold text-white">Herz</span>
-                        <span class="text-[10px] text-red-400 font-semibold">2x Punkte</span>
-                    </button>
-                    <button onclick="selectTrump('spades')" class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-400 transition">
-                        <span class="text-2xl text-slate-200 leading-none mb-1">♠</span>
-                        <span class="text-sm font-bold text-white">Pik</span>
-                        <span class="text-[10px] text-slate-400">Rang 2</span>
-                    </button>
-                    <button onclick="selectTrump('diamonds')" class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-slate-800 hover:bg-red-950/60 border border-slate-700 hover:border-red-400 transition">
-                        <span class="text-2xl text-red-500 leading-none mb-1">♦</span>
-                        <span class="text-sm font-bold text-white">Karo</span>
-                        <span class="text-[10px] text-slate-400">Rang 3</span>
-                    </button>
-                    <button onclick="selectTrump('clubs')" class="flex flex-col items-center justify-center p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-400 transition">
-                        <span class="text-2xl text-slate-200 leading-none mb-1">♣</span>
-                        <span class="text-sm font-bold text-white">Kreuz</span>
-                        <span class="text-[10px] text-amber-400">Höchste Farbe</span>
-                    </button>
-                </div>
-
-                <button id="btn-second-card-trump" onclick="revealSecondCardForTrump()" class="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs sm:text-sm font-bold transition">
-                    Nicht entscheiden → 2. Karte offen aufdecken
-                </button>
-            </div>
-
-            <!-- Aktions-Box: Stiche ansagen (für menschlichen Spieler) -->
-            <div id="bid-selection-box" class="hidden bg-slate-900/95 border-2 border-emerald-500 rounded-2xl p-4 sm:p-5 shadow-2xl z-20 max-w-md w-full text-center">
-                <h3 class="text-lg font-bold text-white mb-1">Wie viele Stiche machst du?</h3>
-                <p id="bid-constraint-info" class="text-xs text-slate-300 mb-3">Bisher angesagt: 0 Stiche.</p>
-                <div id="bid-buttons-container" class="flex flex-wrap justify-center gap-2">
-                    <!-- Buttons 0..N werden dynamisch erzeugt -->
-                </div>
-            </div>
-
-            <!-- Aktions-Box: Optionaler Kartentausch vor der Stich-Ansage -->
-            <div id="exchange-selection-box" class="hidden bg-slate-900/95 border-2 border-sky-500 rounded-2xl p-4 sm:p-5 shadow-2xl z-20 max-w-md w-full text-center">
-                <h3 class="text-lg font-bold text-white mb-1">Möchtest du 1 Karte tauschen?</h3>
-                <p id="exchange-info-text" class="text-xs text-slate-300 mb-4">Klicke unten eine Karte auf deiner Hand an, um sie vor der Stich-Ansage auszutauschen, oder behalte deine Karten.</p>
-                <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
-                    <button id="btn-confirm-exchange" onclick="confirmHumanExchange(true)" disabled class="flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition">
-                        Ausgewählte Karte tauschen
-                    </button>
-                    <button onclick="confirmHumanExchange(false)" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow transition">
-                        Karten behalten
-                    </button>
-                </div>
-            </div>
-
-            <!-- Stich-Ablage auf dem Tisch -->
-            <div id="table-cards-area" class="flex flex-wrap items-center justify-center gap-3 sm:gap-5 min-h-[135px] px-4 py-2">
-                <!-- Ausgespielte Karten des aktuellen Stichs -->
-            </div>
-
-        </div>
-
-        <!-- Unterer Bereich: Spieler-Info & Eigene Handkarten -->
-        <div class="bg-black/45 backdrop-blur-md border border-white/15 rounded-2xl p-3 sm:p-4 shadow-xl">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-white/10">
-                <div class="flex items-center gap-2.5">
-                    <div id="human-turn-indicator" class="w-3 h-3 rounded-full bg-slate-600"></div>
-                    <span id="human-name-label" class="font-bold text-base sm:text-lg text-white">Du</span>
-                    <span id="human-dealer-badge" class="hidden text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-semibold">Trumpf-Ansager</span>
-                </div>
-
-                <div class="flex items-center gap-3 sm:gap-5 text-xs sm:text-sm">
-                    <div class="bg-slate-800/90 px-3 py-1 rounded-lg border border-white/10">
-                        <span class="text-slate-400">Angesagt:</span>
-                        <span id="human-bid-val" class="font-bold text-amber-400 ml-1">-</span>
-                    </div>
-                    <div class="bg-slate-800/90 px-3 py-1 rounded-lg border border-white/10">
-                        <span class="text-slate-400">Stiche:</span>
-                        <span id="human-tricks-val" class="font-bold text-emerald-400 ml-1">0</span>
-                    </div>
-                    <div class="bg-slate-800/90 px-3 py-1 rounded-lg border border-white/10">
-                        <span class="text-slate-400">Punkte:</span>
-                        <span id="human-score-val" class="font-bold text-white ml-1">0</span>
+                <!-- Dezentes Tisch-Wasserzeichen -->
+                <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <div class="table-watermark text-center select-none">
+                        <div class="text-lg sm:text-3xl font-extrabold uppercase">Rauf Runter</div>
+                        <div class="text-[10px] sm:text-sm tracking-[0.3em] mt-0.5">♥ ♠ ♦ ♣</div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Handkarten Container -->
-            <div id="human-hand-container" class="flex flex-wrap justify-center items-center gap-1.5 sm:gap-2.5 min-h-[115px] sm:min-h-[135px] py-1">
-                <!-- Karten des Spielers -->
+                <!-- OBERE TISCHSEITE (Gegenüberliegende Mitspieler) -->
+                <div id="table-top-seats" class="relative z-10 flex flex-wrap justify-center items-start gap-1.5 sm:gap-5 flex-shrink-0">
+                    <!-- Dynamisch befüllt -->
+                </div>
+
+                <!-- MITTLERER TISCHBEREICH: Linke Sitzplätze | Stich-Mitte & Dialoge | Rechte Sitzplätze -->
+                <div class="relative z-10 flex-1 min-h-0 grid grid-cols-[auto_1fr_auto] md:grid-cols-[175px_1fr_175px] items-center gap-1 sm:gap-2 my-0.5">
+
+                    <!-- Linke Tischseite (inkl. verdeckter Nachziehstapel) -->
+                    <div class="flex flex-col items-center justify-center gap-1.5">
+                        <div id="table-left-seats" class="flex flex-col items-center justify-center gap-1.5">
+                            <!-- Dynamisch befüllt -->
+                        </div>
+                        <!-- Verdeckter Reststapel auf dem Filz (für Kartentausch) -->
+                        <div id="draw-pile-widget" class="hidden sm:flex flex-col items-center bg-black/25 px-2.5 py-1.5 rounded-xl border border-white/10" title="Verdeckter Stapel für Kartentausch">
+                            <div class="relative w-10 h-14">
+                                <div class="classic-card-back w-9 h-13 rounded-md absolute top-0 left-0"></div>
+                                <div class="classic-card-back w-9 h-13 rounded-md absolute top-0.5 left-0.5"></div>
+                            </div>
+                            <span class="text-[10px] text-emerald-100/80 font-semibold mt-1">Stapel: <strong id="draw-pile-count" class="text-amber-300">0</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Tischmitte: Status-Banner, Aktions-Dialoge & Ausgespielte Stich-Karten -->
+                    <div class="flex flex-col items-center justify-center min-h-0 h-full relative px-1">
+
+                        <!-- Status-Banner -->
+                        <div id="game-status-banner" class="bg-black/70 backdrop-blur-md border border-amber-400/35 px-3 py-1 rounded-full text-[11px] sm:text-sm font-medium text-center text-amber-100 shadow-lg mb-1.5 max-w-md leading-tight">
+                            Runde wird vorbereitet...
+                        </div>
+
+                        <!-- Aktions-Box: Trumpf wählen (für menschlichen Spieler) -->
+                        <div id="trump-selection-box" class="hidden fixed inset-x-3 top-1/2 -translate-y-1/2 sm:static sm:translate-y-0 mx-auto bg-slate-900/95 border-2 border-amber-400 rounded-2xl p-3 sm:p-5 shadow-2xl z-40 max-w-md w-full text-center">
+                            <h3 class="text-sm sm:text-lg font-bold text-white mb-0.5">Trumpf anhand deiner 1. Karte ansagen!</h3>
+                            <p class="text-[11px] sm:text-xs text-slate-300 mb-2">Bei <span class="text-red-400 font-semibold">Herz</span> zählen alle Punkte doppelt!</p>
+
+                            <!-- Vorschau der 1. Karte -->
+                            <div id="first-card-preview" class="flex justify-center mb-2.5"></div>
+
+                            <div class="grid grid-cols-4 gap-1.5 sm:gap-2 mb-2">
+                                <button onclick="selectTrump('hearts')" class="flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-red-950/80 border border-slate-700 hover:border-red-500 transition">
+                                    <span class="text-xl sm:text-2xl text-red-500 leading-none mb-0.5">♥</span>
+                                    <span class="text-[11px] sm:text-sm font-bold text-white">Herz</span>
+                                    <span class="text-[9px] sm:text-[10px] text-red-400 font-semibold">2x Pkt</span>
+                                </button>
+                                <button onclick="selectTrump('spades')" class="flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-400 transition">
+                                    <span class="text-xl sm:text-2xl text-slate-200 leading-none mb-0.5">♠</span>
+                                    <span class="text-[11px] sm:text-sm font-bold text-white">Pik</span>
+                                    <span class="text-[9px] sm:text-[10px] text-slate-400">Rang 2</span>
+                                </button>
+                                <button onclick="selectTrump('diamonds')" class="flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-red-950/60 border border-slate-700 hover:border-red-400 transition">
+                                    <span class="text-xl sm:text-2xl text-red-500 leading-none mb-0.5">♦</span>
+                                    <span class="text-[11px] sm:text-sm font-bold text-white">Karo</span>
+                                    <span class="text-[9px] sm:text-[10px] text-slate-400">Rang 3</span>
+                                </button>
+                                <button onclick="selectTrump('clubs')" class="flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-400 transition">
+                                    <span class="text-xl sm:text-2xl text-slate-200 leading-none mb-0.5">♣</span>
+                                    <span class="text-[11px] sm:text-sm font-bold text-white">Kreuz</span>
+                                    <span class="text-[9px] sm:text-[10px] text-amber-400">Höchste</span>
+                                </button>
+                            </div>
+
+                            <button id="btn-second-card-trump" onclick="revealSecondCardForTrump()" class="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs sm:text-sm font-bold transition">
+                                Nicht entscheiden → 2. Karte aufdecken
+                            </button>
+                        </div>
+
+                        <!-- Aktions-Box: Optionaler Kartentausch vor der Stich-Ansage -->
+                        <div id="exchange-selection-box" class="hidden bg-slate-900/95 border-2 border-sky-400 rounded-2xl p-2.5 sm:p-4 shadow-2xl z-30 max-w-md w-full text-center">
+                            <h3 class="text-xs sm:text-base font-bold text-white mb-0.5">1 Karte tauschen? (Optional)</h3>
+                            <p id="exchange-info-text" class="text-[11px] sm:text-xs text-slate-300 mb-2">Tippe unten eine Handkarte an oder behalte deine Karten.</p>
+                            <div class="flex gap-2 justify-center">
+                                <button id="btn-confirm-exchange" onclick="confirmHumanExchange(true)" disabled class="flex-1 py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition">
+                                    Karte tauschen
+                                </button>
+                                <button onclick="confirmHumanExchange(false)" class="flex-1 py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow transition">
+                                    Karten behalten
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Aktions-Box: Stiche ansagen (für menschlichen Spieler) -->
+                        <div id="bid-selection-box" class="hidden bg-slate-900/95 border-2 border-emerald-400 rounded-2xl p-2.5 sm:p-4 shadow-2xl z-30 max-w-md w-full text-center">
+                            <h3 class="text-xs sm:text-base font-bold text-white mb-0.5">Wie viele Stiche machst du?</h3>
+                            <p id="bid-constraint-info" class="text-[11px] sm:text-xs text-slate-300 mb-2">Bisher angesagt: 0 Stiche.</p>
+                            <div id="bid-buttons-container" class="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+                                <!-- Buttons 0..N werden dynamisch erzeugt -->
+                            </div>
+                        </div>
+
+                        <!-- Stich-Ablage in der Tischmitte -->
+                        <div id="table-cards-area" class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-4 min-h-[96px] sm:min-h-[125px] px-1 py-1">
+                            <!-- Ausgespielte Karten des aktuellen Stichs -->
+                        </div>
+                    </div>
+
+                    <!-- Rechte Tischseite -->
+                    <div id="table-right-seats" class="flex flex-col items-center justify-center gap-1.5">
+                        <!-- Dynamisch befüllt -->
+                    </div>
+                </div>
+
+                <!-- UNTERE TISCHSEITE: Dein Sitzplatz & gefächerte Handkarten -->
+                <div class="relative z-20 pt-1.5 border-t border-white/10 flex-shrink-0">
+                    <!-- Dein Spieler-Pod am unteren Tischrand -->
+                    <div class="flex items-center justify-between gap-1.5 mb-1 px-0.5">
+                        <div id="human-seat-badge" class="flex items-center gap-1.5 bg-black/55 border border-white/15 px-2.5 py-1 rounded-full shadow min-w-0">
+                            <div class="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-extrabold text-[11px] sm:text-xs flex items-center justify-center shadow flex-shrink-0" id="human-avatar-initial">D</div>
+                            <div id="human-turn-indicator" class="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></div>
+                            <span id="human-name-label" class="font-bold text-xs sm:text-base text-white truncate">Du</span>
+                            <span id="human-dealer-badge" class="hidden text-[9px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded-full font-extrabold flex-shrink-0">T</span>
+                        </div>
+
+                        <div class="flex items-center gap-1 sm:gap-2.5 text-[11px] sm:text-sm flex-shrink-0">
+                            <div class="bg-black/55 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/15">
+                                <span class="text-emerald-200/75">Ans:</span>
+                                <span id="human-bid-val" class="font-extrabold text-amber-400 ml-0.5">-</span>
+                            </div>
+                            <div class="bg-black/55 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-white/15">
+                                <span class="text-emerald-200/75">St:</span>
+                                <span id="human-tricks-val" class="font-extrabold text-emerald-400 ml-0.5">0</span>
+                            </div>
+                            <div class="bg-black/55 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-amber-400/30">
+                                <span class="text-emerald-200/75">Pkt:</span>
+                                <span id="human-score-val" class="font-extrabold text-white ml-0.5">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Handkarten-Fächer am unteren Tischrand -->
+                    <div id="human-hand-container" class="flex justify-center items-end h-[106px] sm:h-[138px] pt-1 pb-0.5 px-1 overflow-visible">
+                        <!-- Karten des Spielers -->
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
 
     <!-- MODAL: Rundenauswertung -->
     <div id="round-summary-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-white/20 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl">
+        <div class="bg-slate-900 border border-amber-400/30 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl">
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h2 id="summary-title" class="text-xl font-extrabold text-white">Rundenende</h2>
@@ -440,7 +629,7 @@
                 </table>
             </div>
 
-            <button id="next-round-btn" onclick="proceedToNextRound()" class="mt-6 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition">
+            <button id="next-round-btn" onclick="proceedToNextRound()" class="mt-6 w-full py-3 bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 text-white font-bold rounded-xl shadow-lg transition">
                 Nächste Runde starten
             </button>
             <p id="guest-round-wait-hint" class="hidden mt-4 text-center text-xs text-amber-300">
@@ -451,7 +640,7 @@
 
     <!-- MODAL: Gesamter Punktestand -->
     <div id="score-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-white/20 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl">
+        <div class="bg-slate-900 border border-amber-400/30 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-white">Aktuelle Tabelle</h2>
                 <button onclick="toggleModal('score-modal')" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
@@ -467,7 +656,7 @@
 
     <!-- MODAL: Spielregeln -->
     <div id="rules-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-white/20 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+        <div class="bg-slate-900 border border-amber-400/30 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
                 <h2 class="text-xl font-extrabold text-amber-400">Spielregeln: Rauf Runter</h2>
                 <button onclick="toggleModal('rules-modal')" class="text-slate-400 hover:text-white text-2xl font-bold px-2">&times;</button>
@@ -481,6 +670,7 @@
 
                 <p><strong class="text-white">2. Rundenverlauf (Rauf & Runter):</strong><br>
                 In Runde 1 erhält jeder Spieler <strong>2 Karten</strong>. Pro Runde steigt die Kartenanzahl um 1 bis zum Maximum (3 Spieler: 9 Karten, 4 Spieler: 7 Karten, 5 Spieler: 6 Karten, 6 Spieler: 5 Karten). Danach geht es wieder schrittweise hinunter bis auf <strong>1 Karte</strong> in der letzten Runde.</p>
+
                 <p><strong class="text-white">3. Trumpf, Kartentausch & Stich-Ansage:</strong><br>
                 • <strong>Trumpfwahl:</strong> Der Startspieler erhält zuerst nur seine <strong>1. Karte</strong> und kann anhand dieser den Trumpf ansagen. Möchte er sich noch nicht entscheiden, wird seine <strong>2. Karte</strong> offen für alle Spieler aufgedeckt und deren Farbe wird automatisch Trumpf (funktioniert auch in der 1-Karten-Runde durch Aufdecken einer offenen Karte).<br>
                 • <strong>Karten austeilen & Kartentausch (Optional):</strong> Danach erhalten alle Spieler ihre restlichen Karten. Vor der Stich-Ansage darf jeder Spieler einmalig <strong>1 Karte</strong> aus seiner Hand gegen eine neue Karte vom verdeckten Stapel tauschen – oder seine Hand behalten.<br>
@@ -501,61 +691,93 @@
     </div>
 
     <script>
-        /**
-         * RAUF RUNTER - KARTENSPIEL LOGIK
-         * Implementiert alle spezifischen Regeln für Kartenwerte, Farbenrangfolge,
-         * Stich-Ansagebeschränkungen, Trumpf-Bedienpflicht und Herz-Verdopplung.
-         */
-
-        // --- KONSTANTEN & DEFINITIONEN ---
-
-        // Farben aufsteigend nach Wertigkeit: Herz (0) < Pik (1) < Karo (2) < Kreuz (3)
+        // --- SPIELKONSTANTEN & REGELWERK ---
         const SUITS = {
-            hearts:   { id: 'hearts',   name: 'Herz',  symbol: '♥', rank: 0, colorClass: 'card-red' },
-            spades:   { id: 'spades',   name: 'Pik',   symbol: '♠', rank: 1, colorClass: 'card-black' },
-            diamonds: { id: 'diamonds', name: 'Karo',  symbol: '♦', rank: 2, colorClass: 'card-red' },
-            clubs:    { id: 'clubs',    name: 'Kreuz', symbol: '♣', rank: 3, colorClass: 'card-black' }
+            hearts:   { id: 'hearts',   name: 'Herz',  symbol: '♥', rank: 1, colorClass: 'card-red' },
+            spades:   { id: 'spades',   name: 'Pik',   symbol: '♠', rank: 2, colorClass: 'card-black' },
+            diamonds: { id: 'diamonds', name: 'Karo',  symbol: '♦', rank: 3, colorClass: 'card-red' },
+            clubs:    { id: 'clubs',    name: 'Kreuz', symbol: '♣', rank: 4, colorClass: 'card-black' }
         };
 
-        // Kartenwerte aufsteigend: 7 (0) < 8 (1) < 9 (2) < Bube (3) < Dame (4) < König (5) < 10 (6) < Ass (7)
+        // Wertigkeit: 7 < 8 < 9 < Bube < Dame < König < 10 < Ass
         const RANKS = [
-            { id: '7',  label: '7',  value: 0 },
-            { id: '8',  label: '8',  value: 1 },
-            { id: '9',  label: '9',  value: 2 },
-            { id: 'J',  label: 'B',  value: 3 },
-            { id: 'Q',  label: 'D',  value: 4 },
-            { id: 'K',  label: 'K',  value: 5 },
-            { id: '10', label: '10', value: 6 },
-            { id: 'A',  label: 'A',  value: 7 }
+            { id: '7',  label: '7', value: 1 },
+            { id: '8',  label: '8', value: 2 },
+            { id: '9',  label: '9', value: 3 },
+            { id: 'J',  label: 'B', value: 4 },
+            { id: 'Q',  label: 'D', value: 5 },
+            { id: 'K',  label: 'K', value: 6 },
+            { id: '10', label: '10', value: 7 },
+            { id: 'A',  label: 'A', value: 8 }
         ];
 
-        const BOT_NAMES = ['Lena', 'Markus', 'Sophie', 'Lukas', 'Hannah'];
+        const MAX_CARDS_BY_PLAYERS = {
+            3: 9,
+            4: 7,
+            5: 6,
+            6: 5
+        };
 
-        // --- SPIELZUSTAND ---
+        const BOT_NAMES = ['Lukas', 'Marie', 'Jonas', 'Sophie', 'Tobi'];
+
+        // --- ZENTRALER SPIELZUSTAND ---
         let state = {
-            mode: 'solo',         // 'solo' | 'multi'
-            myPlayerIdx: 0,       // Index des lokalen Spielers im players-Array
+            mode: 'solo', // 'solo' oder 'multi'
             roomCode: null,
             hostUid: null,
+            myPlayerIdx: 0,
             playerCount: 4,
-            players: [],          // { id, uid, name, isHuman, hand: [], bid: null, tricks: 0, score: 0 }
-            roundSequence: [],    // z.B. [2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1]
+            players: [],
+            roundSequence: [],
             currentRoundIdx: 0,
-            deck: [],             // Verbleibender Kartenstapel der aktuellen Runde
-            pendingHands: [],     // Vollständige zugeteilte Hände vor Abschluss der Trumpfwahl
-            revealedTrumpCard: null, // Falls 2. Karte den Trumpf bestimmt hat, wird sie offen gezeigt
-            trump: null,          // 'hearts' | 'spades' | 'diamonds' | 'clubs'
-            roundStarterIdx: 0,   // Wer sagt Trumpf an & eröffnet die Runde
-            turnIdx: 0,           // Wer ist aktuell am Zug
-            phase: 'LOBBY',       // 'LOBBY' | 'SELECT_TRUMP' | 'BIDDING' | 'EXCHANGE' | 'PLAYING' | 'TRICK_END' | 'ROUND_END' | 'GAME_OVER'
-            currentTrick: [],     // [{ playerIdx, card }]
+            deck: [],
+            pendingHands: [],
+            revealedTrumpCard: null,
+            trump: null,
+            roundStarterIdx: 0,
+            turnIdx: 0,
+            phase: 'LOBBY', // LOBBY, SELECT_TRUMP, EXCHANGE, BIDDING, PLAYING, TRICK_END, ROUND_END
+            currentTrick: [],
             bidsMadeCount: 0,
             exchangesDoneCount: 0,
             selectedExchangeCardId: null,
             aiTimeout: null
         };
 
-        // --- LOBBY MODUS-UMSCHALTER & HELFER ---
+        window.mpCurrentUid = null;
+
+        function isLocalPlayer(playerIdx) {
+            const p = state.players[playerIdx];
+            if (!p || !p.isHuman) return false;
+            if (state.mode === 'solo') return playerIdx === 0;
+            return p.uid === window.mpCurrentUid;
+        }
+
+        function isRoomHost() {
+            if (state.mode === 'solo') return true;
+            return state.hostUid && state.hostUid === window.mpCurrentUid;
+        }
+
+        function canControlBot(playerIdx) {
+            const p = state.players[playerIdx];
+            if (!p || p.isHuman) return false;
+            return isRoomHost();
+        }
+
+        // --- LOBBY-INTERAKTIONEN ---
+        document.querySelectorAll('.count-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.count-btn').forEach(b => {
+                    b.className = 'count-btn py-2.5 rounded-xl font-bold border border-white/15 bg-black/40 text-emerald-100 hover:bg-black/60 transition';
+                    const sub = b.querySelector('span');
+                    if (sub) sub.className = 'block text-[10px] font-normal text-emerald-200/70';
+                });
+                btn.className = 'count-btn py-2.5 rounded-xl font-bold border-2 border-amber-400 bg-amber-500/25 text-amber-300 transition shadow';
+                const activeSub = btn.querySelector('span');
+                if (activeSub) activeSub.className = 'block text-[10px] font-normal text-amber-200/90';
+                state.playerCount = parseInt(btn.dataset.count, 10);
+            });
+        });
 
         function switchLobbyMode(mode) {
             state.mode = mode;
@@ -566,19 +788,20 @@
 
             if (mode === 'solo') {
                 tabSolo.className = 'py-2 rounded-lg text-sm font-bold bg-amber-500 text-slate-950 shadow transition';
-                tabMulti.className = 'py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition';
+                tabMulti.className = 'py-2 rounded-lg text-sm font-bold text-emerald-100/75 hover:text-white transition';
                 soloPanel.classList.remove('hidden');
                 multiPanel.classList.add('hidden');
             } else {
                 tabMulti.className = 'py-2 rounded-lg text-sm font-bold bg-amber-500 text-slate-950 shadow transition';
-                tabSolo.className = 'py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition';
-                soloPanel.classList.add('hidden');
+                tabSolo.className = 'py-2 rounded-lg text-sm font-bold text-emerald-100/75 hover:text-white transition';
                 multiPanel.classList.remove('hidden');
+                soloPanel.classList.add('hidden');
             }
         }
 
         function showMultiError(msg) {
             const box = document.getElementById('multi-error-box');
+            if (!box) return;
             if (!msg) {
                 box.classList.add('hidden');
                 box.textContent = '';
@@ -589,106 +812,63 @@
         }
 
         function copyRoomCode() {
-            if (!state.roomCode) return;
+            const code = document.getElementById('lobby-room-code-display').textContent;
             const btn = document.getElementById('btn-copy-code');
-            const orig = btn.textContent;
-            const showCopied = () => {
+            const markCopied = () => {
                 btn.textContent = 'Kopiert!';
-                setTimeout(() => { btn.textContent = orig; }, 1500);
+                setTimeout(() => { btn.textContent = 'Kopieren'; }, 1800);
             };
 
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(state.roomCode).then(showCopied).catch(() => {
-                    fallbackCopyText(state.roomCode, showCopied);
+                navigator.clipboard.writeText(code).then(markCopied).catch(() => {
+                    fallbackCopyText(code);
+                    markCopied();
                 });
             } else {
-                fallbackCopyText(state.roomCode, showCopied);
+                fallbackCopyText(code);
+                markCopied();
             }
         }
 
-        function fallbackCopyText(text, onDone) {
-            try {
-                const tempInput = document.createElement('input');
-                tempInput.value = text;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                if (onDone) onDone();
-            } catch (e) {
-                console.warn('Kopieren nicht unterstützt:', e);
+        function fallbackCopyText(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+        }
+
+        function toggleModal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (id === 'score-modal' && el.classList.contains('hidden')) {
+                renderFullScoreboard();
             }
-        }
-
-        function isLocalPlayer(playerIdx) {
-            return playerIdx === state.myPlayerIdx;
-        }
-
-        function isRoomHost() {
-            if (state.mode === 'solo') return true;
-            return window.mpCurrentUid && state.hostUid === window.mpCurrentUid;
-        }
-
-        function canControlBot(botIdx) {
-            // Im Einzelspieler steuert der lokale Spieler die Bots; im Multiplayer übernimmt nur der Host die Bot-Züge
-            return state.mode === 'solo' || isRoomHost();
-        }
-
-        // --- INITIALISIERUNG & UI HELFER ---
-
-        // Spieleranzahl-Buttons in der Lobby verknüpfen
-        document.querySelectorAll('.count-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.count-btn').forEach(b => {
-                    b.classList.remove('border-2', 'border-amber-500', 'bg-amber-500/20', 'text-amber-300');
-                    b.classList.add('border', 'border-slate-700', 'bg-slate-800', 'text-slate-300');
-                });
-                btn.classList.remove('border', 'border-slate-700', 'bg-slate-800', 'text-slate-300');
-                btn.classList.add('border-2', 'border-amber-500', 'bg-amber-500/20', 'text-amber-300');
-                state.playerCount = parseInt(btn.dataset.count, 10);
-            });
-        });
-
-        function toggleModal(modalId) {
-            const el = document.getElementById(modalId);
-            if (el.classList.contains('hidden')) {
-                if (modalId === 'score-modal') renderFullScoreboard();
-                el.classList.remove('hidden');
-            } else {
-                el.classList.add('hidden');
-            }
+            el.classList.toggle('hidden');
         }
 
         function setStatusBanner(htmlText) {
-            document.getElementById('game-status-banner').innerHTML = htmlText;
+            const banner = document.getElementById('game-status-banner');
+            if (banner) banner.innerHTML = htmlText;
         }
 
-        // Berechnet die Rundenfolge: Start bei 2 -> hoch bis Max -> runter bis 1
-        function buildRoundSequence(numPlayers) {
-            const maxMap = { 3: 9, 4: 7, 5: 6, 6: 5 };
-            const maxCards = maxMap[numPlayers] || 7;
-            const seq = [];
-            for (let c = 2; c <= maxCards; c++) seq.push(c);
-            for (let c = maxCards - 1; c >= 1; c--) seq.push(c);
-            return seq;
-        }
-
-        // Erzeugt ein gemischtes 32-Karten-Deck
-        function createShuffledDeck() {
+        // --- DECK & RUNDEN-AUFBAU ---
+        function createDeck() {
             const deck = [];
-            for (const suitKey of Object.keys(SUITS)) {
-                for (const rankObj of RANKS) {
+            Object.keys(SUITS).forEach(suitKey => {
+                RANKS.forEach(rank => {
                     deck.push({
+                        id: `${suitKey}_${rank.id}`,
                         suit: suitKey,
-                        rankId: rankObj.id,
-                        label: rankObj.label,
-                        value: rankObj.value,
-                        suitRank: SUITS[suitKey].rank,
-                        id: `${suitKey}_${rankObj.id}`
+                        rankId: rank.id,
+                        label: rank.label,
+                        value: rank.value
                     });
-                }
-            }
-            // Fisher-Yates Shuffle
+                });
+            });
             for (let i = deck.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -696,24 +876,43 @@
             return deck;
         }
 
-        // --- SPIELSTART & RUNDENABLAUF ---
+        function buildRoundSequence(playerCount) {
+            const maxCards = MAX_CARDS_BY_PLAYERS[playerCount] || 7;
+            const seq = [];
+            for (let c = 2; c <= maxCards; c++) seq.push(c);
+            for (let c = maxCards - 1; c >= 1; c--) seq.push(c);
+            return seq;
+        }
 
+        function sortHand(hand, trumpSuit) {
+            return [...hand].sort((a, b) => {
+                const aTrump = trumpSuit && a.suit === trumpSuit ? 1 : 0;
+                const bTrump = trumpSuit && b.suit === trumpSuit ? 1 : 0;
+                if (aTrump !== bTrump) return bTrump - aTrump;
+                if (SUITS[a.suit].rank !== SUITS[b.suit].rank) {
+                    return SUITS[b.suit].rank - SUITS[a.suit].rank;
+                }
+                return b.value - a.value;
+            });
+        }
+
+        // --- SPIELSTART & RUNDENABLAUF ---
         function startNewGame() {
             clearTimeout(state.aiTimeout);
             state.mode = 'solo';
+            state.roomCode = null;
             state.myPlayerIdx = 0;
-            const humanNameInput = document.getElementById('player-name-input').value.trim();
-            const humanName = humanNameInput || 'Du';
 
+            const humanName = document.getElementById('player-name-input').value.trim() || 'Spieler';
             state.players = [
-                { id: 0, uid: 'local', name: humanName, isHuman: true, hand: [], bid: null, tricks: 0, score: 0 }
+                { id: 0, uid: 'local_0', name: humanName, isHuman: true, hand: [], bid: null, tricks: 0, score: 0 }
             ];
 
             for (let i = 1; i < state.playerCount; i++) {
                 state.players.push({
                     id: i,
                     uid: `bot_${i}`,
-                    name: BOT_NAMES[i - 1],
+                    name: BOT_NAMES[(i - 1) % BOT_NAMES.length],
                     isHuman: false,
                     hand: [],
                     bid: null,
@@ -724,10 +923,11 @@
 
             state.roundSequence = buildRoundSequence(state.playerCount);
             state.currentRoundIdx = 0;
-            state.roundStarterIdx = 0; // Mensch beginnt in Runde 1 als Trumpfansager
+            state.roundStarterIdx = 0;
 
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
+            document.body.classList.add('in-game-lock');
             document.getElementById('header-round-info').classList.remove('hidden');
             document.getElementById('btn-scoreboard').classList.remove('hidden');
             document.getElementById('btn-leave-room').classList.add('hidden');
@@ -739,517 +939,539 @@
         function startRound() {
             clearTimeout(state.aiTimeout);
             const cardsPerPlayer = state.roundSequence[state.currentRoundIdx];
-            const fullDeck = createShuffledDeck();
-
+            state.deck = createDeck();
             state.trump = null;
             state.revealedTrumpCard = null;
             state.currentTrick = [];
             state.bidsMadeCount = 0;
             state.exchangesDoneCount = 0;
             state.selectedExchangeCardId = null;
-            state.turnIdx = state.roundStarterIdx;
-            // Karten für alle Spieler vorbereiten:
-            // Zuerst bekommt der Trumpf-Ansager nur seine 1. Karte, alle anderen erhalten ihre vollständigen Hände erst nach der Trumpfwahl
+
+            // Karten für alle Spieler vorbereiten
             state.pendingHands = [];
-            state.players.forEach((p, idx) => {
-                const fullPlayerHand = fullDeck.slice(idx * cardsPerPlayer, (idx + 1) * cardsPerPlayer);
-                state.pendingHands[idx] = fullPlayerHand;
-                p.bid = null;
-                p.tricks = 0;
-
-                if (idx === state.roundStarterIdx) {
-                    // Trumpf-Ansager sieht vorerst nur seine 1. Karte
-                    p.hand = [fullPlayerHand[0]];
-                } else {
-                    // Restliche Karten werden direkt nach der Trumpfansage ausgeteilt
-                    p.hand = [];
+            for (let i = 0; i < state.playerCount; i++) {
+                const fullHand = [];
+                for (let c = 0; c < cardsPerPlayer; c++) {
+                    fullHand.push(state.deck.pop());
                 }
-            });
+                state.pendingHands.push(fullHand);
+                state.players[i].hand = [];
+                state.players[i].bid = null;
+                state.players[i].tricks = 0;
+            }
 
-            // Restliche Karten im Deck für den Kartentausch aufbewahren
-            state.deck = fullDeck.slice(state.playerCount * cardsPerPlayer);
+            // Der Trumpf-Ansager erhält zunächst nur seine 1. Karte sichtbar auf die Hand
+            const starterIdx = state.roundStarterIdx;
+            state.players[starterIdx].hand = [state.pendingHands[starterIdx][0]];
+            state.turnIdx = starterIdx;
+            state.phase = 'SELECT_TRUMP';
 
-            // Header UI aktualisieren
             document.getElementById('ui-round-num').textContent = state.currentRoundIdx + 1;
             document.getElementById('ui-cards-count').textContent = cardsPerPlayer;
-            document.getElementById('header-trump-box').classList.add('hidden');
-            document.getElementById('header-trump-box').classList.remove('flex');
+
+            const trumpBox = document.getElementById('header-trump-box');
+            trumpBox.classList.add('hidden');
+            trumpBox.classList.remove('flex');
+
             document.getElementById('trump-selection-box').classList.add('hidden');
-            document.getElementById('bid-selection-box').classList.add('hidden');
             document.getElementById('exchange-selection-box').classList.add('hidden');
+            document.getElementById('bid-selection-box').classList.add('hidden');
+            document.getElementById('round-summary-modal').classList.add('hidden');
 
-            state.phase = 'SELECT_TRUMP';
             renderAll();
-            syncStateToCloud();
 
-            const starter = state.players[state.roundStarterIdx];
-            if (isLocalPlayer(state.roundStarterIdx)) {
-                setStatusBanner(`Runde ${state.currentRoundIdx + 1}: Wähle Trumpf anhand deiner 1. Karte oder lass die 2. Karte entscheiden!`);
+            const starter = state.players[starterIdx];
+            if (isLocalPlayer(starterIdx)) {
+                setStatusBanner(`Runde ${state.currentRoundIdx + 1} (${cardsPerPlayer} Karten): Wähle Trumpf anhand deiner 1. Karte oder lass die 2. Karte entscheiden!`);
                 showHumanTrumpDialog(starter.hand[0]);
-            } else if (starter.isHuman) {
-                setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> wählt den Trumpf...`);
             } else {
-                setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> prüft die 1. Karte für die Trumpfwahl...`);
-                if (canControlBot(state.roundStarterIdx)) {
-                    state.aiTimeout = setTimeout(() => {
-                        aiDecideTrumpFromFirstCard(starter);
-                    }, 1100);
+                setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> schaut seine 1. Karte an und wählt Trumpf...`);
+                if (canControlBot(starterIdx)) {
+                    state.aiTimeout = setTimeout(() => aiChooseTrump(starterIdx), 950);
                 }
             }
+
+            syncStateToCloud();
         }
 
+        // --- PHASE 1: TRUMPF WÄHLEN (1. KARTE ODER OFFENE 2. KARTE) ---
         function showHumanTrumpDialog(firstCard) {
+            const box = document.getElementById('trump-selection-box');
             const preview = document.getElementById('first-card-preview');
             preview.innerHTML = '';
-            const cardEl = createCardElement(firstCard, false, false);
-            cardEl.classList.add('ring-2', 'ring-amber-400');
-            preview.appendChild(cardEl);
-            document.getElementById('trump-selection-box').classList.remove('hidden');
-        }
-
-        // Sortiert Handkarten nach Farbe und Kartenwert
-        function sortHand(hand) {
-            hand.sort((a, b) => {
-                if (a.suitRank !== b.suitRank) return a.suitRank - b.suitRank;
-                return a.value - b.value;
-            });
-        }
-
-        // --- PHASE 1: TRUMPF WÄHLEN ---
-
-        function dealAllHandsAfterTrump() {
-            state.players.forEach((p, idx) => {
-                p.hand = [...state.pendingHands[idx]];
-                sortHand(p.hand);
-            });
-        }
-
-        function revealSecondCardForTrump() {
-            if (state.phase !== 'SELECT_TRUMP') return;
-            document.getElementById('trump-selection-box').classList.add('hidden');
-
-            const starterIdx = state.roundStarterIdx;
-            const starter = state.players[starterIdx];
-            const starterFullHand = state.pendingHands[starterIdx];
-
-            // 2. Karte des Trumpf-Ansagers nehmen (in der 1-Karten-Runde fallback auf oberste Stapelkarte)
-            let secondCard = starterFullHand.length >= 2 ? starterFullHand[1] : state.deck.shift();
-            state.revealedTrumpCard = secondCard;
-
-            // Alle Spieler erhalten jetzt ihre vollständigen Karten
-            dealAllHandsAfterTrump();
-            renderAll();
-            syncStateToCloud();
-
-            const suitInfo = SUITS[secondCard.suit];
-            setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> deckt die 2. Karte offen auf: <span class="font-bold text-amber-300">${suitInfo.symbol} ${secondCard.label}</span> bestimmt Trumpf <strong>${suitInfo.name}</strong>!`);
-
-            if (isLocalPlayer(starterIdx) || (!starter.isHuman && canControlBot(starterIdx))) {
-                state.aiTimeout = setTimeout(() => {
-                    state.revealedTrumpCard = null;
-                    applySelectedTrump(secondCard.suit);
-                }, 2200);
+            if (firstCard) {
+                preview.appendChild(createCardElement(firstCard, false, false, true));
             }
+            box.classList.remove('hidden');
         }
 
         function selectTrump(suitKey) {
-            if (state.phase !== 'SELECT_TRUMP') return;
+            if (state.phase !== 'SELECT_TRUMP' || !isLocalPlayer(state.roundStarterIdx)) return;
             document.getElementById('trump-selection-box').classList.add('hidden');
-            state.revealedTrumpCard = null;
-            dealAllHandsAfterTrump();
-            applySelectedTrump(suitKey);
+            applySelectedTrump(suitKey, false);
         }
 
-        function applySelectedTrump(suitKey) {
-            state.trump = suitKey;
+        function revealSecondCardForTrump() {
+            if (state.phase !== 'SELECT_TRUMP' || !isLocalPlayer(state.roundStarterIdx)) return;
+            document.getElementById('trump-selection-box').classList.add('hidden');
+            triggerSecondCardTrumpReveal(state.roundStarterIdx);
+        }
 
-            const trumpBox = document.getElementById('header-trump-box');
+        function triggerSecondCardTrumpReveal(starterIdx) {
+            const starter = state.players[starterIdx];
+            const starterPending = state.pendingHands[starterIdx];
+
+            // Falls Runde mit >= 2 Karten: 2. Handkarte offen zeigen; in der 1-Karten-Runde: oberste Deckkarte aufdecken
+            let secondCard = null;
+            if (starterPending && starterPending.length >= 2) {
+                secondCard = starterPending[1];
+            } else if (state.deck.length > 0) {
+                secondCard = state.deck[state.deck.length - 1];
+            } else {
+                secondCard = starterPending[0];
+            }
+
+            state.revealedTrumpCard = secondCard;
+            renderTableCards();
+
+            const suitInfo = SUITS[secondCard.suit];
+            setStatusBanner(`<span class="text-white font-bold">${starter.name}</span> deckt die 2. Karte offen auf: <span class="font-bold text-amber-300">${suitInfo.symbol} ${secondCard.label}</span> bestimmt Trumpf <strong>${suitInfo.name}</strong>!`);
+            syncStateToCloud();
+
+            if (isLocalPlayer(starterIdx) || canControlBot(starterIdx)) {
+                state.aiTimeout = setTimeout(() => {
+                    applySelectedTrump(secondCard.suit, true);
+                }, 1500);
+            }
+        }
+
+        function aiChooseTrump(starterIdx) {
+            const firstCard = state.pendingHands[starterIdx][0];
+            // KI wählt Trumpf direkt, wenn die 1. Karte Ass, 10 oder König ist (und bevorzugt nicht Herz außer Ass)
+            if (firstCard && (firstCard.value >= 7 || (firstCard.value >= 6 && firstCard.suit !== 'hearts'))) {
+                applySelectedTrump(firstCard.suit, false);
+            } else {
+                triggerSecondCardTrumpReveal(starterIdx);
+            }
+        }
+
+        function applySelectedTrump(suitKey, wasRevealed) {
+            state.trump = suitKey;
+            state.revealedTrumpCard = null;
+
+            // Jetzt erhalten alle Spieler ihre vollständigen Handkarten
+            for (let i = 0; i < state.playerCount; i++) {
+                state.players[i].hand = sortHand(state.pendingHands[i], state.trump);
+            }
+            state.pendingHands = [];
+
+            // Trumpf im Header anzeigen
             const s = SUITS[suitKey];
+            const trumpBox = document.getElementById('header-trump-box');
             trumpBox.classList.remove('hidden');
             trumpBox.classList.add('flex');
-            const colorHtml = suitKey === 'hearts' || suitKey === 'diamonds' ? 'text-red-400' : 'text-slate-100';
+            const colorHtml = (suitKey === 'hearts' || suitKey === 'diamonds') ? 'text-red-400' : 'text-slate-100';
             document.getElementById('ui-trump-display').innerHTML = `<span class="${colorHtml} text-lg">${s.symbol}</span> <span class="text-white">${s.name}</span>`;
             document.getElementById('ui-double-badge').classList.toggle('hidden', suitKey !== 'hearts');
 
-            setStatusBanner(`Trumpf ist <span class="font-bold text-amber-300">${s.symbol} ${s.name}</span>! Alle Karten wurden ausgeteilt.`);
-
-            // Übergang zu Phase 2: Optionaler Kartentausch (noch vor der Stich-Ansage!)
+            // Weiter zur optionalen Kartentausch-Phase (beginnend beim Startspieler)
             state.phase = 'EXCHANGE';
             state.turnIdx = state.roundStarterIdx;
             state.exchangesDoneCount = 0;
             state.selectedExchangeCardId = null;
 
             renderAll();
-            syncStateToCloud();
             processNextExchange();
-        }
-
-        function executeCardExchange(player, cardId) {
-            const cardIdx = player.hand.findIndex(c => c.id === cardId);
-            if (cardIdx === -1 || state.deck.length === 0) return null;
-
-            player.hand.splice(cardIdx, 1);
-            const drawnCard = state.deck.shift();
-            player.hand.push(drawnCard);
-            sortHand(player.hand);
-            return drawnCard;
+            syncStateToCloud();
         }
 
         // --- PHASE 2: OPTIONALER KARTENTAUSCH VOR DER STICH-ANSAGE ---
-
         function processNextExchange() {
-            renderAll();
-            const currentPlayer = state.players[state.turnIdx];
+            document.getElementById('exchange-selection-box').classList.add('hidden');
 
-            // Falls der verdeckte Stapel leer ist, direkt zur Stich-Ansage übergehen
-            if (state.deck.length === 0) {
-                if (isRoomHost() || isLocalPlayer(state.turnIdx)) {
-                    startBiddingPhase();
-                }
+            // Falls alle Spieler dran waren oder der Stapel leer ist -> Weiter zur Stich-Ansage
+            if (state.exchangesDoneCount >= state.playerCount || state.deck.length === 0) {
+                state.phase = 'BIDDING';
+                state.turnIdx = state.roundStarterIdx;
+                state.bidsMadeCount = 0;
+                state.selectedExchangeCardId = null;
+                renderAll();
+                processNextBid();
+                syncStateToCloud();
                 return;
             }
 
-            if (isLocalPlayer(state.turnIdx)) {
-                setStatusBanner(`Kartentausch-Phase: Du darfst optional 1 Karte gegen eine neue tauschen.`);
+            const currentIdx = state.turnIdx;
+            const currentPlayer = state.players[currentIdx];
+            renderAll();
+
+            if (isLocalPlayer(currentIdx)) {
+                setStatusBanner(`Trumpf ist <strong>${SUITS[state.trump].name}</strong>: Du kannst jetzt optional 1 Karte tauschen oder deine Hand behalten.`);
                 showHumanExchangeDialog();
-            } else if (currentPlayer.isHuman) {
-                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> entscheidet über den Kartentausch...`);
             } else {
                 setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> überlegt, ob eine Karte getauscht wird...`);
-                if (canControlBot(state.turnIdx)) {
-                    state.aiTimeout = setTimeout(() => {
-                        const cardToDrop = aiChooseCardToExchange(currentPlayer, state.trump);
-                        if (cardToDrop && state.deck.length > 0) {
-                            executeCardExchange(currentPlayer, cardToDrop.id);
-                            setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> hat 1 Karte getauscht.`);
-                        } else {
-                            setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> behält die Karten.`);
-                        }
-                        renderAll();
-                        syncStateToCloud();
-                        state.aiTimeout = setTimeout(() => {
-                            advanceExchangeTurn();
-                        }, 700);
-                    }, 850);
+                if (canControlBot(currentIdx)) {
+                    state.aiTimeout = setTimeout(() => aiDecideExchange(currentIdx), 800);
                 }
             }
         }
 
         function showHumanExchangeDialog() {
             const box = document.getElementById('exchange-selection-box');
-            const confirmBtn = document.getElementById('btn-confirm-exchange');
+            const btnConfirm = document.getElementById('btn-confirm-exchange');
             const infoText = document.getElementById('exchange-info-text');
 
-            state.selectedExchangeCardId = null;
-            confirmBtn.disabled = true;
-            confirmBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition';
-            infoText.textContent = 'Tippe unten eine Karte auf deiner Hand an, um sie vor der Stich-Ansage auszutauschen, oder behalte deine Karten.';
+            if (state.selectedExchangeCardId) {
+                btnConfirm.disabled = false;
+                btnConfirm.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 shadow transition cursor-pointer';
+                infoText.textContent = 'Karte ausgewählt! Klicke auf „Ausgewählte Karte tauschen“ oder wähle eine andere Karte.';
+            } else {
+                btnConfirm.disabled = true;
+                btnConfirm.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition';
+                infoText.textContent = 'Tippe unten eine Karte auf deiner Hand an, um sie gegen eine neue Karte vom Stapel zu tauschen, oder behalte deine Karten.';
+            }
 
             box.classList.remove('hidden');
-            renderHumanArea();
         }
 
         function selectCardForExchange(cardId) {
             if (state.phase !== 'EXCHANGE' || !isLocalPlayer(state.turnIdx)) return;
-
             state.selectedExchangeCardId = (state.selectedExchangeCardId === cardId) ? null : cardId;
-            const confirmBtn = document.getElementById('btn-confirm-exchange');
-
-            if (state.selectedExchangeCardId) {
-                confirmBtn.disabled = false;
-                confirmBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 shadow transition cursor-pointer';
-            } else {
-                confirmBtn.disabled = true;
-                confirmBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-bold text-sm bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition';
-            }
             renderHumanArea();
+            showHumanExchangeDialog();
         }
 
-        function confirmHumanExchange(doExchange) {
+        function confirmHumanExchange(doSwap) {
             if (state.phase !== 'EXCHANGE' || !isLocalPlayer(state.turnIdx)) return;
-            document.getElementById('exchange-selection-box').classList.add('hidden');
+            const cardId = doSwap ? state.selectedExchangeCardId : null;
+            if (doSwap && !cardId) return;
 
-            const human = state.players[state.myPlayerIdx];
-            if (doExchange && state.selectedExchangeCardId && state.deck.length > 0) {
-                const newCard = executeCardExchange(human, state.selectedExchangeCardId);
-                const suitInfo = SUITS[newCard.suit];
-                setStatusBanner(`Karte getauscht! Du hast <span class="text-sky-300 font-bold">${suitInfo.symbol} ${newCard.label}</span> gezogen.`);
+            document.getElementById('exchange-selection-box').classList.add('hidden');
+            executeCardExchange(state.turnIdx, cardId);
+        }
+
+        function aiDecideExchange(playerIdx) {
+            const player = state.players[playerIdx];
+            if (state.deck.length === 0) {
+                executeCardExchange(playerIdx, null);
+                return;
+            }
+
+            // KI tauscht ihre schwächste Nicht-Trumpf-Karte (Wert <= 2, also 7 oder 8)
+            const nonTrumps = player.hand.filter(c => c.suit !== state.trump).sort((a, b) => a.value - b.value);
+            if (nonTrumps.length > 0 && nonTrumps[0].value <= 2) {
+                executeCardExchange(playerIdx, nonTrumps[0].id);
             } else {
-                setStatusBanner(`Du behältst deine Karten.`);
+                executeCardExchange(playerIdx, null);
+            }
+        }
+
+        function executeCardExchange(playerIdx, cardIdToSwap) {
+            const player = state.players[playerIdx];
+
+            if (cardIdToSwap && state.deck.length > 0) {
+                const cardIdx = player.hand.findIndex(c => c.id === cardIdToSwap);
+                if (cardIdx !== -1) {
+                    const newCard = state.deck.pop();
+                    player.hand[cardIdx] = newCard;
+                    player.hand = sortHand(player.hand, state.trump);
+                    setStatusBanner(`<span class="text-white font-bold">${player.name}</span> hat 1 Karte ausgetauscht.`);
+                }
+            } else {
+                setStatusBanner(`<span class="text-white font-bold">${player.name}</span> behält seine Karten.`);
             }
 
             state.selectedExchangeCardId = null;
+            state.exchangesDoneCount++;
+            state.turnIdx = (state.turnIdx + 1) % state.playerCount;
+
             renderAll();
             syncStateToCloud();
 
-            state.aiTimeout = setTimeout(() => {
-                advanceExchangeTurn();
-            }, 900);
-        }
-
-        function advanceExchangeTurn() {
-            state.exchangesDoneCount++;
-            if (state.exchangesDoneCount >= state.playerCount) {
-                startBiddingPhase();
-            } else {
-                state.turnIdx = (state.turnIdx + 1) % state.playerCount;
-                syncStateToCloud();
-                processNextExchange();
+            if (state.mode === 'solo' || isRoomHost() || isLocalPlayer(state.turnIdx)) {
+                state.aiTimeout = setTimeout(() => {
+                    processNextExchange();
+                }, 550);
             }
         }
 
-        function startBiddingPhase() {
-            state.phase = 'BIDDING';
-            state.turnIdx = state.roundStarterIdx;
-            state.bidsMadeCount = 0;
-            renderAll();
-            syncStateToCloud();
-            processNextBid();
-        }
-
-        // --- PHASE 3: STICHE ANSAGEN ---
-
-        function getCurrentBidSum() {
-            return state.players.reduce((acc, p) => acc + (typeof p.bid === 'number' ? p.bid : 0), 0);
+        // --- PHASE 3: STICHE ANSAGEN (SUMME != KARTENANZAHL) ---
+        function getCurrentBidsSum() {
+            return state.players.reduce((sum, p) => sum + (p.bid !== null ? p.bid : 0), 0);
         }
 
         function getForbiddenBid() {
-            // Nur der letzte Spieler der Ansagerunde hat eine Einschränkung:
-            // Gesamtsumme aller angesagten Stiche darf NIEMALS gleich der Kartenanzahl der Runde sein!
-            const remainingBidders = state.players.filter(p => p.bid === null).length;
-            if (remainingBidders !== 1) return null;
-
+            // Nur der letzte Spieler der Ansagerunde unterliegt der Summen-Sperre
+            if (state.bidsMadeCount !== state.playerCount - 1) return null;
             const cardsInRound = state.roundSequence[state.currentRoundIdx];
-            const currentSum = getCurrentBidSum();
+            const currentSum = getCurrentBidsSum();
             const forbidden = cardsInRound - currentSum;
             return (forbidden >= 0 && forbidden <= cardsInRound) ? forbidden : null;
         }
 
         function processNextBid() {
-            renderAll();
-            const currentPlayer = state.players[state.turnIdx];
-            const cardsInRound = state.roundSequence[state.currentRoundIdx];
-            const currentSum = getCurrentBidSum();
+            document.getElementById('bid-selection-box').classList.add('hidden');
 
-            if (isLocalPlayer(state.turnIdx)) {
-                setStatusBanner(`Deine Stich-Ansage (${cardsInRound} ${cardsInRound === 1 ? 'Karte' : 'Karten'} im Spiel)`);
-                showHumanBidDialog(cardsInRound, currentSum);
-            } else if (currentPlayer.isHuman) {
-                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> sagt seine Stiche an...`);
+            if (state.bidsMadeCount >= state.playerCount) {
+                state.phase = 'PLAYING';
+                state.turnIdx = state.roundStarterIdx;
+                renderAll();
+                promptCardPlay();
+                syncStateToCloud();
+                return;
+            }
+
+            const currentIdx = state.turnIdx;
+            const currentPlayer = state.players[currentIdx];
+            renderAll();
+
+            if (isLocalPlayer(currentIdx)) {
+                showHumanBidDialog();
             } else {
-                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> überlegt die Stich-Ansage...`);
-                if (canControlBot(state.turnIdx)) {
-                    state.aiTimeout = setTimeout(() => {
-                        const forbidden = getForbiddenBid();
-                        const bid = aiChooseBid(currentPlayer.hand, state.trump, cardsInRound, forbidden);
-                        submitBid(bid);
-                    }, 850);
+                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> sagt seine Stiche an...`);
+                if (canControlBot(currentIdx)) {
+                    state.aiTimeout = setTimeout(() => aiChooseBid(currentIdx), 800);
                 }
             }
         }
 
-        function showHumanBidDialog(cardsInRound, currentSum) {
-            const box = document.getElementById('bid-selection-box');
-            const info = document.getElementById('bid-constraint-info');
-            const container = document.getElementById('bid-buttons-container');
+        function showHumanBidDialog() {
+            const cardsInRound = state.roundSequence[state.currentRoundIdx];
+            const currentSum = getCurrentBidsSum();
             const forbidden = getForbiddenBid();
 
-            let infoText = `Bisher angesagt: <strong class="text-white">${currentSum}</strong> (Karten pro Spieler: <strong>${cardsInRound}</strong>).`;
+            let infoText = `Bisher angesagt: <strong>${currentSum}</strong> von <strong>${cardsInRound}</strong> möglichen Stichen.`;
             if (forbidden !== null) {
-                infoText += `<br><span class="text-red-400 font-semibold">Du darfst nicht ${forbidden} ansagen (Gesamtsumme darf nicht ${cardsInRound} sein)!</span>`;
+                infoText += ` <span class="text-red-400 font-bold">Du darfst nicht ${forbidden} ansagen!</span>`;
             }
-            info.innerHTML = infoText;
+            document.getElementById('bid-constraint-info').innerHTML = infoText;
 
+            const container = document.getElementById('bid-buttons-container');
             container.innerHTML = '';
+
             for (let b = 0; b <= cardsInRound; b++) {
-                const isForbidden = (b === forbidden);
+                const isForbidden = (forbidden !== null && b === forbidden);
                 const btn = document.createElement('button');
                 btn.textContent = b;
-                btn.disabled = isForbidden;
                 if (isForbidden) {
-                    btn.className = 'w-11 h-11 rounded-xl font-bold bg-slate-800/50 text-slate-600 border border-slate-700/50 cursor-not-allowed line-through';
-                    btn.title = `Nicht erlaubt, da die Gesamtsumme sonst ${cardsInRound} wäre`;
+                    btn.disabled = true;
+                    btn.className = 'w-11 h-11 rounded-xl font-extrabold text-base bg-slate-800/60 text-slate-600 border border-red-500/30 line-through cursor-not-allowed';
+                    btn.title = `Nicht erlaubt, da sonst insgesamt ${cardsInRound} Stiche angesagt wären`;
                 } else {
-                    btn.className = 'w-11 h-11 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition transform active:scale-95';
-                    btn.onclick = () => submitBid(b);
+                    btn.className = 'w-11 h-11 rounded-xl font-extrabold text-base bg-emerald-600 hover:bg-emerald-500 text-white shadow transition transform active:scale-95';
+                    btn.onclick = () => submitBid(state.turnIdx, b);
                 }
                 container.appendChild(btn);
             }
 
-            box.classList.remove('hidden');
+            setStatusBanner(`Du bist dran: Wie viele Stiche machst du in dieser Runde?`);
+            document.getElementById('bid-selection-box').classList.remove('hidden');
         }
 
-        function submitBid(bidAmount) {
-            if (state.phase !== 'BIDDING') return;
-
+        function aiChooseBid(playerIdx) {
+            const player = state.players[playerIdx];
             const cardsInRound = state.roundSequence[state.currentRoundIdx];
             const forbidden = getForbiddenBid();
 
-            // Strikte Sicherheitsprüfung: Verbotene Ansage beim letzten Spieler unter keinen Umständen zulassen
-            if (forbidden !== null && bidAmount === forbidden) {
-                bidAmount = (forbidden === 0) ? 1 : forbidden - 1;
+            // KI schätzt Stichchancen anhand von Trumpfkarten und hohen Karten (Ass, 10, König)
+            let expected = 0;
+            player.hand.forEach(card => {
+                if (card.suit === state.trump) {
+                    expected += card.value >= 6 ? 0.95 : 0.65;
+                } else if (card.value === 8) {
+                    expected += 0.65;
+                } else if (card.value === 7) {
+                    expected += 0.35;
+                }
+            });
+
+            let chosen = Math.min(cardsInRound, Math.max(0, Math.round(expected)));
+            if (forbidden !== null && chosen === forbidden) {
+                if (chosen + 1 <= cardsInRound) chosen = chosen + 1;
+                else if (chosen - 1 >= 0) chosen = chosen - 1;
             }
-            bidAmount = Math.max(0, Math.min(cardsInRound, bidAmount));
+
+            submitBid(playerIdx, chosen);
+        }
+
+        function submitBid(playerIdx, bidValue) {
+            if (state.phase !== 'BIDDING' || state.turnIdx !== playerIdx) return;
+
+            const cardsInRound = state.roundSequence[state.currentRoundIdx];
+            const forbidden = getForbiddenBid();
+            if (forbidden !== null && bidValue === forbidden) {
+                return;
+            }
+
+            // Doppelte Absicherung am Rundenende
+            if (state.bidsMadeCount === state.playerCount - 1 && (getCurrentBidsSum() + bidValue === cardsInRound)) {
+                return;
+            }
 
             document.getElementById('bid-selection-box').classList.add('hidden');
-
-            state.players[state.turnIdx].bid = bidAmount;
+            state.players[playerIdx].bid = bidValue;
             state.bidsMadeCount++;
+            state.turnIdx = (state.turnIdx + 1) % state.playerCount;
 
-            const remainingBidders = state.players.filter(p => p.bid === null).length;
-            if (remainingBidders === 0) {
-                // Alle haben angesagt -> Spielrunde beginnt!
-                startPlayingPhase();
-            } else {
-                state.turnIdx = (state.turnIdx + 1) % state.playerCount;
-                syncStateToCloud();
-                processNextBid();
-            }
-        }
-
-        function startPlayingPhase() {
-            state.phase = 'PLAYING';
-            state.turnIdx = state.roundStarterIdx;
             renderAll();
             syncStateToCloud();
-            promptCardPlay();
+
+            if (state.mode === 'solo' || isRoomHost() || isLocalPlayer(state.turnIdx)) {
+                state.aiTimeout = setTimeout(() => processNextBid(), 450);
+            }
         }
 
-        // --- PHASE 4: KARTEN AUSSPIELEN & STICHREGELN ---
-
+        // --- PHASE 4: STICHE AUSSPIELEN & BEDIENPFLICHT ---
         function getLegalCards(hand) {
-            if (state.currentTrick.length === 0) {
-                return hand; // Ausspieler darf jede Karte spielen
-            }
-
-            const trumpPlayedInTrick = state.currentTrick.some(play => play.card.suit === state.trump);
-            if (trumpPlayedInTrick) {
-                const trumpCardsInHand = hand.filter(c => c.suit === state.trump);
-                if (trumpCardsInHand.length > 0) {
-                    return trumpCardsInHand; // Trumpf-Bedienpflicht!
+            if (!hand || hand.length === 0) return [];
+            // Trumpf-Bedienpflicht gilt nur, wenn der Stich auch mit einer Trumpfkarte eröffnet wurde
+            const ledWithTrump = state.currentTrick.length > 0 && state.currentTrick[0].card.suit === state.trump;
+            if (ledWithTrump) {
+                const trumpsInHand = hand.filter(c => c.suit === state.trump);
+                if (trumpsInHand.length > 0) {
+                    return trumpsInHand;
                 }
             }
-
-            // Ansonsten (kein Trumpf im Stich oder selbst keinen Trumpf mehr) darf jede Karte gelegt werden
             return hand;
         }
 
-        function promptCardPlay() {
-            renderAll();
-            const activePlayer = state.players[state.turnIdx];
+        function compareCards(cardA, cardB, trumpSuit) {
+            const aTrump = (cardA.suit === trumpSuit);
+            const bTrump = (cardB.suit === trumpSuit);
 
-            if (isLocalPlayer(state.turnIdx)) {
-                const legalCards = getLegalCards(activePlayer.hand);
-                const mustPlayTrump = legalCards.length < activePlayer.hand.length;
-                if (mustPlayTrump) {
-                    setStatusBanner(`Du bist dran! <span class="text-amber-400 font-bold">Trumpf wurde gespielt – du musst Trumpf bedienen!</span>`);
+            if (aTrump && !bTrump) return 1;
+            if (!aTrump && bTrump) return -1;
+
+            // Beide Trumpf: höherer Kartenwert gewinnt
+            if (aTrump && bTrump) {
+                return cardA.value - cardB.value;
+            }
+
+            // Kein Trumpf: erst Kartenwert, bei gleichem Wert zählt die Farbenwertigkeit (Kreuz > Karo > Pik > Herz)
+            if (cardA.value !== cardB.value) {
+                return cardA.value - cardB.value;
+            }
+            return SUITS[cardA.suit].rank - SUITS[cardB.suit].rank;
+        }
+
+        function determineTrickWinner(trickPlays, trumpSuit) {
+            let bestPlay = trickPlays[0];
+            for (let i = 1; i < trickPlays.length; i++) {
+                if (compareCards(trickPlays[i].card, bestPlay.card, trumpSuit) > 0) {
+                    bestPlay = trickPlays[i];
+                }
+            }
+            return bestPlay;
+        }
+
+        function promptCardPlay() {
+            const currentIdx = state.turnIdx;
+            const currentPlayer = state.players[currentIdx];
+            renderAll();
+
+            if (isLocalPlayer(currentIdx)) {
+                const ledWithTrump = state.currentTrick.length > 0 && state.currentTrick[0].card.suit === state.trump;
+                const hasTrump = currentPlayer.hand.some(c => c.suit === state.trump);
+                if (ledWithTrump && hasTrump) {
+                    setStatusBanner(`Du bist dran! <span class="text-amber-300 font-bold">Trumpf wurde angespielt – du musst Trumpf bedienen!</span>`);
                 } else {
                     setStatusBanner(`Du bist dran! Wähle eine Karte zum Ausspielen.`);
                 }
-            } else if (activePlayer.isHuman) {
-                setStatusBanner(`<span class="text-white font-bold">${activePlayer.name}</span> ist am Zug...`);
             } else {
-                setStatusBanner(`<span class="text-white font-bold">${activePlayer.name}</span> spielt eine Karte...`);
-                if (canControlBot(state.turnIdx)) {
-                    state.aiTimeout = setTimeout(() => {
-                        const chosenCard = aiChooseCardToPlay(activePlayer);
-                        playCard(activePlayer.id, chosenCard.id);
-                    }, 750);
+                setStatusBanner(`<span class="text-white font-bold">${currentPlayer.name}</span> ist am Zug...`);
+                if (canControlBot(currentIdx)) {
+                    state.aiTimeout = setTimeout(() => aiPlayCard(currentIdx), 850);
                 }
             }
+        }
+
+        function aiPlayCard(playerIdx) {
+            const player = state.players[playerIdx];
+            const legal = getLegalCards(player.hand);
+            if (legal.length === 0) return;
+
+            const needsMoreTricks = player.tricks < player.bid;
+            let chosenCard = legal[0];
+
+            if (state.currentTrick.length === 0) {
+                // KI eröffnet den Stich
+                const sorted = [...legal].sort((a, b) => compareCards(b, a, state.trump));
+                chosenCard = needsMoreTricks ? sorted[0] : sorted[sorted.length - 1];
+            } else {
+                const currentBest = determineTrickWinner(state.currentTrick, state.trump);
+                const winningOptions = legal
+                    .filter(c => compareCards(c, currentBest.card, state.trump) > 0)
+                    .sort((a, b) => compareCards(a, b, state.trump));
+                const losingOptions = legal
+                    .filter(c => compareCards(c, currentBest.card, state.trump) < 0)
+                    .sort((a, b) => compareCards(b, a, state.trump));
+
+                if (needsMoreTricks && winningOptions.length > 0) {
+                    chosenCard = winningOptions[0]; // Günstigster Stichgewinn
+                } else if (!needsMoreTricks && losingOptions.length > 0) {
+                    chosenCard = losingOptions[0]; // Höchste Karte abwerfen, ohne den Stich zu gewinnen
+                } else {
+                    const fallback = [...legal].sort((a, b) => compareCards(a, b, state.trump));
+                    chosenCard = fallback[0];
+                }
+            }
+
+            playCard(playerIdx, chosenCard.id);
         }
 
         function playCard(playerIdx, cardId) {
             if (state.phase !== 'PLAYING' || state.turnIdx !== playerIdx) return;
 
             const player = state.players[playerIdx];
-            const legalCards = getLegalCards(player.hand);
-            const cardObj = legalCards.find(c => c.id === cardId);
+            const legal = getLegalCards(player.hand);
+            if (!legal.some(c => c.id === cardId)) return;
 
-            if (!cardObj) return; // Ungültiger Zug
+            const cardIdx = player.hand.findIndex(c => c.id === cardId);
+            if (cardIdx === -1) return;
 
-            // Karte aus Hand entfernen und auf den Tisch legen
-            player.hand = player.hand.filter(c => c.id !== cardId);
-            state.currentTrick.push({ playerIdx, card: cardObj });
+            const [playedCard] = player.hand.splice(cardIdx, 1);
+            state.currentTrick.push({ playerIdx, card: playedCard });
 
-            renderAll();
-
-            // Prüfen, ob der Stich komplett ist
-            if (state.currentTrick.length === state.playerCount) {
+            if (state.currentTrick.length < state.playerCount) {
+                state.turnIdx = (state.turnIdx + 1) % state.playerCount;
+                renderAll();
+                promptCardPlay();
+                syncStateToCloud();
+            } else {
+                // Stich ist vollständig
                 state.phase = 'TRICK_END';
+                renderAll();
+
                 const winnerPlay = determineTrickWinner(state.currentTrick, state.trump);
                 const winnerPlayer = state.players[winnerPlay.playerIdx];
-                winnerPlayer.tricks++;
-
-                renderAll();
-                syncStateToCloud();
                 setStatusBanner(`<span class="text-emerald-400 font-bold">${winnerPlayer.name}</span> gewinnt den Stich mit ${SUITS[winnerPlay.card.suit].symbol} ${winnerPlay.card.label}!`);
-
-                // Der Spieler, der die letzte Karte gelegt hat, löst nach kurzer Pause den nächsten Stich/Rundenende aus
-                if (isLocalPlayer(playerIdx) || (!player.isHuman && canControlBot(playerIdx))) {
-                    state.aiTimeout = setTimeout(() => {
-                        state.currentTrick = [];
-
-                        // Prüfen, ob noch Karten auf der Hand sind
-                        if (state.players[0].hand.length === 0) {
-                            finishRound();
-                        } else {
-                            // Stichgewinner eröffnet den nächsten Stich
-                            state.turnIdx = winnerPlay.playerIdx;
-                            state.phase = 'PLAYING';
-                            syncStateToCloud();
-                            promptCardPlay();
-                        }
-                    }, 1650);
-                }
-            } else {
-                state.turnIdx = (state.turnIdx + 1) % state.playerCount;
                 syncStateToCloud();
-                promptCardPlay();
-            }
-        }
 
-        /**
-         * Ermittelt den Gewinner eines Stichs gemäß den exakten Spielregeln:
-         * 1. Angesagter Trumpf schlägt alle Nicht-Trumpfkarten (unter Trümpfen entscheidet Kartenwert).
-         * 2. Liegt kein Trumpf im Stich, gewinnt der höchste Kartenwert (7 < 8 < 9 < B < D < K < 10 < Ass).
-         * 3. Haben mehrere Karten den gleichen höchsten Kartenwert, entscheidet die Wertigkeit der Farbe:
-         *    Herz (0) < Pik (1) < Karo (2) < Kreuz (3).
-         */
-        function determineTrickWinner(trickPlays, trumpSuit) {
-            let bestPlay = trickPlays[0];
-
-            for (let i = 1; i < trickPlays.length; i++) {
-                const candidate = trickPlays[i];
-                if (compareCards(candidate.card, bestPlay.card, trumpSuit) > 0) {
-                    bestPlay = candidate;
+                if (state.mode === 'solo' || isRoomHost() || isLocalPlayer(winnerPlay.playerIdx)) {
+                    state.aiTimeout = setTimeout(() => {
+                        resolveTrick(winnerPlay.playerIdx);
+                    }, 1550);
                 }
             }
-            return bestPlay;
         }
 
-        function compareCards(cardA, cardB, trumpSuit) {
-            const aIsTrump = cardA.suit === trumpSuit;
-            const bIsTrump = cardB.suit === trumpSuit;
+        function resolveTrick(winnerIdx) {
+            state.players[winnerIdx].tricks++;
+            state.currentTrick = [];
 
-            if (aIsTrump && !bIsTrump) return 1;
-            if (!aIsTrump && bIsTrump) return -1;
-
-            if (aIsTrump && bIsTrump) {
-                // Beide sind Trumpf -> höherer Kartenwert gewinnt
-                return cardA.value - cardB.value;
+            // Prüfen, ob noch Karten auf der Hand sind
+            if (state.players[0].hand.length > 0) {
+                state.phase = 'PLAYING';
+                state.turnIdx = winnerIdx;
+                renderAll();
+                promptCardPlay();
+                syncStateToCloud();
+            } else {
+                finishRound();
             }
-
-            // Keine der beiden Karten ist Trumpf:
-            // Zuerst Kartenwert vergleichen, bei Gleichstand entscheidet die Farben-Wertigkeit!
-            if (cardA.value !== cardB.value) {
-                return cardA.value - cardB.value;
-            }
-            return cardA.suitRank - cardB.suitRank;
         }
 
-        // --- PHASE 4: RUNDENAUSWERTUNG & PUNKTESYSTEM ---
-
+        // --- PHASE 5: RUNDENAUSWERTUNG & PUNKTEBERECHNUNG ---
         function finishRound() {
             state.phase = 'ROUND_END';
             const isHeartTrump = (state.trump === 'hearts');
@@ -1260,16 +1482,7 @@
 
             state.players.forEach(p => {
                 const hitExact = (p.tricks === p.bid);
-                let roundPoints = 0;
-
-                if (hitExact) {
-                    // 10 Punkte + angesagte Stiche (bei Herz-Trumpf doppelt)
-                    roundPoints = (10 + p.bid) * multiplier;
-                } else {
-                    // -10 Punkte (bei Herz-Trumpf -20 Punkte)
-                    roundPoints = -10 * multiplier;
-                }
-
+                const roundPoints = hitExact ? (10 + p.bid) * multiplier : -10 * multiplier;
                 p.score += roundPoints;
 
                 const tr = document.createElement('tr');
@@ -1302,26 +1515,15 @@
                 document.getElementById('summary-subtitle').textContent = `Endstand nach ${state.roundSequence.length} Runden (${winner.score} Punkte)`;
                 nextBtn.classList.remove('hidden');
                 guestHint.classList.add('hidden');
-                nextBtn.textContent = 'Zurück zur Lobby';
-                nextBtn.onclick = () => {
-                    document.getElementById('round-summary-modal').classList.add('hidden');
-                    if (state.mode === 'multi') {
-                        leaveMultiplayerRoom();
-                    } else {
-                        document.getElementById('game-screen').classList.add('hidden');
-                        document.getElementById('header-round-info').classList.add('hidden');
-                        document.getElementById('header-trump-box').classList.add('hidden');
-                        document.getElementById('btn-scoreboard').classList.add('hidden');
-                        document.getElementById('lobby-screen').classList.remove('hidden');
-                    }
-                };
+                nextBtn.textContent = state.mode === 'multi' ? 'Zurück zur Lobby' : 'Neues Spiel starten';
+                nextBtn.onclick = state.mode === 'multi' ? leaveMultiplayerRoom : resetToLobby;
             } else {
                 document.getElementById('summary-title').textContent = `Auswertung Runde ${state.currentRoundIdx + 1}`;
                 document.getElementById('summary-subtitle').textContent = isHeartTrump ? 'Herz-Trumpf: Alle Punkte wurden verdoppelt!' : 'Reguläre Punktewertung';
                 if (isRoomHost()) {
                     nextBtn.classList.remove('hidden');
                     guestHint.classList.add('hidden');
-                    nextBtn.textContent = `Weiter zu Runde ${state.currentRoundIdx + 2} (${state.roundSequence[state.currentRoundIdx + 1]} ${state.roundSequence[state.currentRoundIdx + 1] === 1 ? 'Karte' : 'Karten'})`;
+                    nextBtn.textContent = `Weiter zu Runde ${state.currentRoundIdx + 2}`;
                     nextBtn.onclick = proceedToNextRound;
                 } else {
                     nextBtn.classList.add('hidden');
@@ -1329,149 +1531,156 @@
                 }
             }
 
-            syncStateToCloud();
             document.getElementById('round-summary-modal').classList.remove('hidden');
+            syncStateToCloud();
         }
 
         function proceedToNextRound() {
             if (!isRoomHost()) return;
-            document.getElementById('round-summary-modal').classList.add('hidden');
             state.currentRoundIdx++;
-            // Trumpf-Ansager wechselt reihum im Uhrzeigersinn
             state.roundStarterIdx = (state.roundStarterIdx + 1) % state.playerCount;
             startRound();
         }
 
-        // --- KÜNSTLICHE INTELLIGENZ (KI-GEGNER) ---
-
-        function aiDecideTrumpFromFirstCard(botPlayer) {
-            const firstCard = botPlayer.hand[0];
-            // Hat die 1. Karte einen hohen Wert (König, 10, Ass) oder ist Kreuz/Karo mit Dame+, sagt KI direkt deren Farbe an
-            if (firstCard.value >= 5 || (firstCard.value >= 4 && firstCard.suit !== 'hearts')) {
-                selectTrump(firstCard.suit);
-            } else {
-                // Ansonsten lässt die KI die 2. Karte offen entscheiden
-                revealSecondCardForTrump();
-            }
-        }
-
-        function aiChooseCardToExchange(botPlayer, trumpSuit) {
-            if (botPlayer.hand.length <= 1) return null;
-
-            // Da die Stich-Ansage erst nach dem Tausch erfolgt, versucht die KI generell
-            // schwache Nicht-Trumpfkarten (7, 8, 9) gegen potenziell bessere Karten/Trümpfe zu tauschen.
-            const weakCards = botPlayer.hand.filter(c => c.suit !== trumpSuit && c.value <= 2);
-            if (weakCards.length > 0 && Math.random() < 0.65) {
-                weakCards.sort((a, b) => a.value - b.value);
-                return weakCards[0];
-            }
-            return null;
-        }
-
-        function aiChooseBid(hand, trumpSuit, cardsInRound, forbiddenBid) {
-            // Schätzt realistische Stichwahrscheinlichkeit basierend auf Trumpfkarten & hohen Non-Trümpfen
-            let expectedTricks = 0;
-            hand.forEach(c => {
-                if (c.suit === trumpSuit) {
-                    if (c.value >= 6) expectedTricks += 0.95;      // Trumpf Ass / 10
-                    else if (c.value >= 4) expectedTricks += 0.75; // Trumpf König / Dame
-                    else expectedTricks += 0.45;                   // Niedriger Trumpf
-                } else {
-                    if (c.value === 7 && c.suitRank >= 2) expectedTricks += 0.55; // Hohes Ass (Karo/Kreuz)
-                    else if (c.value === 7) expectedTricks += 0.4;
-                    else if (c.value === 6 && c.suitRank === 3) expectedTricks += 0.35; // Kreuz 10
-                }
-            });
-
-            let bid = Math.round(expectedTricks);
-            bid = Math.max(0, Math.min(cardsInRound, bid));
-
-            if (forbiddenBid !== null && bid === forbiddenBid) {
-                // Garantiert gültige Ausweich-Ansage wählen
-                const validBids = [];
-                for (let b = 0; b <= cardsInRound; b++) {
-                    if (b !== forbiddenBid) validBids.push(b);
-                }
-                validBids.sort((a, b) => Math.abs(a - expectedTricks) - Math.abs(b - expectedTricks));
-                bid = validBids[0];
-            }
-            return bid;
-        }
-
-        function aiChooseCardToPlay(botPlayer) {
-            const legalCards = getLegalCards(botPlayer.hand);
-            if (legalCards.length === 1) return legalCards[0];
-
-            const needsMoreTricks = botPlayer.tricks < botPlayer.bid;
-
-            // Sortiere legale Karten nach Gesamtstärke (Trumpf > Kartenwert > Farbenrang)
-            const sortedByPower = [...legalCards].sort((a, b) => compareCards(a, b, state.trump));
-
-            if (state.currentTrick.length === 0) {
-                // KI eröffnet den Stich: Wenn noch Stiche benötigt werden, starke Karte spielen; sonst schwache
-                return needsMoreTricks ? sortedByPower[sortedByPower.length - 1] : sortedByPower[0];
-            }
-
-            const currentBestPlay = determineTrickWinner(state.currentTrick, state.trump);
-            const winningOptions = sortedByPower.filter(c => compareCards(c, currentBestPlay.card, state.trump) > 0);
-
-            if (needsMoreTricks && winningOptions.length > 0) {
-                // Spiele die kleinste Karte, die den aktuellen Stich übersticht
-                return winningOptions[0];
-            } else {
-                // Will den Stich nicht (oder kann ihn nicht gewinnen): wirf die niedrigste Karte ab
-                return sortedByPower[0];
-            }
+        function resetToLobby() {
+            clearTimeout(state.aiTimeout);
+            state.phase = 'LOBBY';
+            document.body.classList.remove('in-game-lock');
+            document.getElementById('round-summary-modal').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('header-round-info').classList.add('hidden');
+            document.getElementById('header-trump-box').classList.add('hidden');
+            document.getElementById('btn-scoreboard').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
         }
 
         // --- UI RENDERING ---
 
         function renderAll() {
+            renderDrawPile();
             renderOpponents();
             renderTableCards();
             renderHumanArea();
         }
 
-        function renderOpponents() {
-            const container = document.getElementById('opponents-container');
-            container.innerHTML = '';
+        function renderDrawPile() {
+            const widget = document.getElementById('draw-pile-widget');
+            const countEl = document.getElementById('draw-pile-count');
+            if (!widget || !countEl) return;
 
-            state.players.forEach((p, idx) => {
-                if (isLocalPlayer(idx)) return;
+            if (state.deck && state.deck.length > 0) {
+                widget.classList.remove('hidden');
+                countEl.textContent = state.deck.length;
+            } else {
+                widget.classList.add('hidden');
+            }
+        }
 
-                const isTurn = (state.turnIdx === idx && (state.phase === 'SELECT_TRUMP' || state.phase === 'BIDDING' || state.phase === 'EXCHANGE' || state.phase === 'PLAYING'));
-                const isStarter = (state.roundStarterIdx === idx);
+        // Berechnet die Sitzpositionen der Mitspieler im Uhrzeigersinn um den Spieltisch herum
+        function getSeatDistribution(opponentIndices) {
+            const count = opponentIndices.length;
+            if (count === 2) {
+                // 3 Spieler insgesamt: links oben & rechts oben
+                return { left: [], top: [opponentIndices[0], opponentIndices[1]], right: [] };
+            }
+            if (count === 3) {
+                // 4 Spieler insgesamt: links, oben gegenüber, rechts
+                return { left: [opponentIndices[0]], top: [opponentIndices[1]], right: [opponentIndices[2]] };
+            }
+            if (count === 4) {
+                // 5 Spieler insgesamt: links, 2 oben, rechts
+                return { left: [opponentIndices[0]], top: [opponentIndices[1], opponentIndices[2]], right: [opponentIndices[3]] };
+            }
+            // 6 Spieler insgesamt: links, 3 oben, rechts
+            return {
+                left: [opponentIndices[0]],
+                top: [opponentIndices[1], opponentIndices[2], opponentIndices[3]],
+                right: [opponentIndices[4]]
+            };
+        }
 
-                const card = document.createElement('div');
-                card.className = `bg-slate-900/80 backdrop-blur-md rounded-xl p-2.5 sm:p-3 border transition flex flex-col justify-between min-w-[145px] sm:min-w-[175px] ${
-                    isTurn ? 'border-amber-400 shadow-lg shadow-amber-500/20 ring-1 ring-amber-400' : 'border-white/10'
-                }`;
+        function createSeatPodElement(idx) {
+            const p = state.players[idx];
+            const isTurn = (state.turnIdx === idx && (state.phase === 'SELECT_TRUMP' || state.phase === 'BIDDING' || state.phase === 'EXCHANGE' || state.phase === 'PLAYING'));
+            const isStarter = (state.roundStarterIdx === idx);
+            const initial = (p.name || '?').charAt(0).toUpperCase();
 
-                // Kleine Kartenrücken für verbleibende Handkarten
-                let miniCardsHtml = '';
-                for (let c = 0; c < p.hand.length; c++) {
-                    miniCardsHtml += `<div class="w-3.5 h-5 rounded-sm bg-blue-700 border border-white/70 -ml-1.5 first:ml-0 shadow-sm"></div>`;
+            // Avatar-Farbe je Sitzplatz
+            const avatarGradients = [
+                'from-sky-400 to-blue-600',
+                'from-purple-400 to-indigo-600',
+                'from-rose-400 to-red-600',
+                'from-teal-400 to-emerald-600',
+                'from-orange-400 to-amber-600'
+            ];
+            const grad = avatarGradients[idx % avatarGradients.length];
+
+            // Gefächerter Handkarten-Bogen für den Mitspieler am Tisch
+            let fannedBacksHtml = '';
+            const cardCount = p.hand.length;
+            if (cardCount > 0) {
+                const maxSpread = Math.min(cardCount * 7, 32);
+                for (let c = 0; c < cardCount; c++) {
+                    const ratio = cardCount === 1 ? 0 : (c / (cardCount - 1)) - 0.5;
+                    const angle = ratio * maxSpread;
+                    const yOffset = Math.abs(ratio) * 3;
+                    fannedBacksHtml += `<div class="classic-card-back w-3 h-4.5 sm:w-4 sm:h-6 rounded-[2px] sm:rounded-[3px] -ml-1.5 sm:-ml-2 first:ml-0 transition-transform" style="transform: rotate(${angle}deg) translateY(${yOffset}px);"></div>`;
                 }
+            } else {
+                fannedBacksHtml = `<span class="text-[9px] text-slate-400 italic">Leer</span>`;
+            }
 
-                card.innerHTML = `
-                    <div class="flex items-center justify-between gap-1 mb-1.5">
-                        <div class="flex items-center gap-1.5 truncate">
-                            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 ${isTurn ? 'bg-amber-400 animate-ping' : 'bg-slate-600'}"></span>
-                            <span class="font-bold text-sm text-white truncate">${p.name}</span>
+            const pod = document.createElement('div');
+            pod.className = `seat-pod rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 flex flex-col items-center w-[98px] sm:w-[152px] ${isTurn ? 'active-turn' : ''}`;
+
+            pod.innerHTML = `
+                <div class="flex items-center justify-between w-full gap-1 mb-0.5 sm:mb-1">
+                    <div class="flex items-center gap-1 truncate">
+                        <div class="w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br ${grad} text-white font-extrabold text-[10px] sm:text-xs flex items-center justify-center shadow flex-shrink-0 border border-white/30">
+                            ${initial}
                         </div>
-                        ${isStarter ? '<span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold" title="Trumpf-Ansager">T</span>' : ''}
+                        <span class="font-bold text-[11px] sm:text-sm text-white truncate">${p.name}</span>
                     </div>
-                    <div class="flex items-center justify-between text-xs text-slate-300 bg-black/30 rounded-lg px-2 py-1 mb-2">
-                        <span>Ansage: <strong class="text-amber-400">${p.bid !== null ? p.bid : '-'}</strong></span>
-                        <span>Stiche: <strong class="text-emerald-400">${p.tricks}</strong></span>
-                        <span>Pkt: <strong class="text-white">${p.score}</strong></span>
-                    </div>
-                    <div class="flex items-center justify-center h-5">
-                        ${miniCardsHtml || '<span class="text-[10px] text-slate-500">Keine Karten</span>'}
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+                    ${isStarter ? '<span class="text-[8px] sm:text-[9px] bg-amber-400 text-slate-950 px-1 py-0.2 rounded-full font-extrabold flex-shrink-0" title="Trumpf-Ansager">T</span>' : ''}
+                </div>
+
+                <!-- Kompakte Canasta-Punkte-Pille -->
+                <div class="flex items-center justify-around w-full text-[9px] sm:text-[11px] bg-black/45 rounded-md sm:rounded-lg px-1 sm:px-2 py-0.5 mb-1 border border-white/10">
+                    <span title="Angesagte Stiche">A:<strong class="text-amber-400">${p.bid !== null ? p.bid : '-'}</strong></span>
+                    <span class="text-white/20">|</span>
+                    <span title="Gewonnene Stiche">S:<strong class="text-emerald-400">${p.tricks}</strong></span>
+                    <span class="text-white/20">|</span>
+                    <span title="Gesamtpunkte">P:<strong class="text-white">${p.score}</strong></span>
+                </div>
+
+                <!-- Gefächerte Karten des Mitspielers -->
+                <div class="flex items-center justify-center h-4 sm:h-6">
+                    ${fannedBacksHtml}
+                </div>
+            `;
+            return pod;
+        }
+
+        function renderOpponents() {
+            const topContainer = document.getElementById('table-top-seats');
+            const leftContainer = document.getElementById('table-left-seats');
+            const rightContainer = document.getElementById('table-right-seats');
+
+            topContainer.innerHTML = '';
+            leftContainer.innerHTML = '';
+            rightContainer.innerHTML = '';
+
+            // Mitspieler im Uhrzeigersinn ausgehend vom eigenen Platz sammeln
+            const orderedOpponents = [];
+            for (let offset = 1; offset < state.playerCount; offset++) {
+                const idx = (state.myPlayerIdx + offset) % state.playerCount;
+                orderedOpponents.push(idx);
+            }
+
+            const seats = getSeatDistribution(orderedOpponents);
+            seats.left.forEach(idx => leftContainer.appendChild(createSeatPodElement(idx)));
+            seats.top.forEach(idx => topContainer.appendChild(createSeatPodElement(idx)));
+            seats.right.forEach(idx => rightContainer.appendChild(createSeatPodElement(idx)));
         }
 
         function renderTableCards() {
@@ -1484,7 +1693,7 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = 'flex flex-col items-center gap-1.5 played-card-anim';
 
-                const cardEl = createCardElement(state.revealedTrumpCard, false, false);
+                const cardEl = createCardElement(state.revealedTrumpCard, false, false, true);
                 cardEl.classList.add('ring-4', 'ring-amber-400');
 
                 const label = document.createElement('span');
@@ -1498,28 +1707,29 @@
             }
 
             if (state.currentTrick.length === 0) {
-                area.innerHTML = `<div class="text-xs text-emerald-200/40 border border-dashed border-emerald-200/20 rounded-xl px-6 py-8">Kartenablage</div>`;
+                area.innerHTML = `<div class="text-xs text-emerald-100/45 border border-dashed border-amber-300/25 bg-black/15 rounded-2xl px-7 py-7">Stich-Ablage</div>`;
                 return;
             }
 
             const currentWinningPlay = state.trump ? determineTrickWinner(state.currentTrick, state.trump) : null;
 
-            state.currentTrick.forEach(play => {
+            state.currentTrick.forEach((play, i) => {
                 const player = state.players[play.playerIdx];
-                const suitInfo = SUITS[play.card.suit];
                 const isWinner = currentWinningPlay && currentWinningPlay.playerIdx === play.playerIdx;
 
                 const wrapper = document.createElement('div');
-                wrapper.className = 'flex flex-col items-center gap-1.5 played-card-anim';
+                wrapper.className = 'flex flex-col items-center gap-1 played-card-anim';
+                const slightTilt = ((i % 2 === 0 ? -1 : 1) * (i + 1) * 1.8);
+                wrapper.style.transform = `rotate(${slightTilt}deg)`;
 
-                const cardEl = createCardElement(play.card, false, false);
+                const cardEl = createCardElement(play.card, false, false, true);
                 if (isWinner && state.currentTrick.length > 1) {
-                    cardEl.classList.add('ring-2', 'ring-emerald-400');
+                    cardEl.classList.add('ring-2', 'ring-amber-400');
                 }
 
                 const label = document.createElement('span');
-                label.className = `text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    isWinner ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40' : 'bg-black/50 text-slate-300'
+                label.className = `text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow ${
+                    isWinner ? 'bg-amber-400 text-slate-950' : 'bg-black/65 text-white border border-white/15'
                 }`;
                 label.textContent = player.name;
 
@@ -1534,6 +1744,7 @@
             if (!human) return;
 
             document.getElementById('human-name-label').textContent = human.name;
+            document.getElementById('human-avatar-initial').textContent = (human.name || 'D').charAt(0).toUpperCase();
             document.getElementById('human-bid-val').textContent = human.bid !== null ? human.bid : '-';
             document.getElementById('human-tricks-val').textContent = human.tricks;
             document.getElementById('human-score-val').textContent = human.score;
@@ -1541,7 +1752,13 @@
 
             const isHumanTurn = (isLocalPlayer(state.turnIdx) && (state.phase === 'SELECT_TRUMP' || state.phase === 'BIDDING' || state.phase === 'EXCHANGE' || state.phase === 'PLAYING'));
             const indicator = document.getElementById('human-turn-indicator');
-            indicator.className = isHumanTurn ? 'w-3 h-3 rounded-full bg-amber-400 animate-ping' : 'w-3 h-3 rounded-full bg-slate-600';
+            const badge = document.getElementById('human-seat-badge');
+            indicator.className = isHumanTurn ? 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping' : 'w-2.5 h-2.5 rounded-full bg-slate-500';
+            if (isHumanTurn) {
+                badge.classList.add('border-amber-400', 'ring-2', 'ring-amber-400/40');
+            } else {
+                badge.classList.remove('border-amber-400', 'ring-2', 'ring-amber-400/40');
+            }
 
             const handContainer = document.getElementById('human-hand-container');
             handContainer.innerHTML = '';
@@ -1550,11 +1767,33 @@
             const canExchangeNow = (state.phase === 'EXCHANGE' && isLocalPlayer(state.turnIdx));
             const legalCards = canPlayNow ? getLegalCards(human.hand) : [];
 
-            human.hand.forEach(card => {
+            const total = human.hand.length;
+            const maxFanAngle = Math.min(total * 2.8, 20);
+            const isMobile = window.innerWidth < 640;
+
+            human.hand.forEach((card, idx) => {
                 const isPlayable = (canPlayNow && legalCards.some(lc => lc.id === card.id)) || canExchangeNow;
                 const isDisabled = canPlayNow && !isPlayable;
 
-                const cardEl = createCardElement(card, isPlayable, isDisabled);
+                const cardEl = createCardElement(card, isPlayable, isDisabled, false);
+
+                // Ergonomischer Handkarten-Fächer angepasst an Smartphone & Desktop
+                if (total > 1) {
+                    const ratio = (idx / (total - 1)) - 0.5;
+                    const rot = ratio * maxFanAngle;
+                    const lift = Math.abs(ratio) * (isMobile ? 6 : 10);
+                    let overlapPx = isMobile ? -12 : -10;
+                    if (total >= 8) overlapPx = isMobile ? -26 : -20;
+                    else if (total >= 6) overlapPx = isMobile ? -20 : -16;
+                    else if (total >= 4) overlapPx = isMobile ? -14 : -12;
+
+                    cardEl.style.marginLeft = idx === 0 ? '0px' : `${overlapPx}px`;
+                    if (state.selectedExchangeCardId !== card.id) {
+                        cardEl.style.transform = `rotate(${rot}deg) translateY(${lift}px)`;
+                    }
+                    cardEl.style.zIndex = idx + 1;
+                }
+
                 if (canExchangeNow && state.selectedExchangeCardId === card.id) {
                     cardEl.classList.add('exchange-selected');
                 }
@@ -1568,26 +1807,176 @@
             });
         }
 
-        function createCardElement(card, isPlayable, isDisabled) {
+        // Deutsches/Französisches Turnierblatt (Altenburger Stil wie auf dem Referenzbild: 4-Ecken-Indizes & doppelköpfige Bildkarten)
+        function buildClassicCardInnerHtml(card, suitInfo) {
+            const sym = suitInfo.symbol;
+            const rankId = card.rankId;
+            const isRed = (card.suit === 'hearts' || card.suit === 'diamonds');
+            const primaryColor = isRed ? '#c81e1e' : '#111827';
+            const robeAccent = isRed ? '#15803d' : '#b91c1c';
+            const trimGold = '#d97706';
+            const tunicBlue = isRed ? '#1d4ed8' : '#0f766e';
+
+            // 4-Ecken-Indizes (oben links, oben rechts, unten links, unten rechts) wie beim Skat-/Turnierblatt
+            const fourCornersHtml = `
+                <div class="absolute top-0.5 left-1 flex flex-col items-center leading-none z-10">
+                    <span class="font-bold text-[10px] sm:text-xs tracking-tighter">${card.label}</span>
+                    <span class="text-[8px] sm:text-[10px] -mt-0.5">${sym}</span>
+                </div>
+                <div class="absolute top-0.5 right-1 flex flex-col items-center leading-none z-10">
+                    <span class="font-bold text-[10px] sm:text-xs tracking-tighter">${card.label}</span>
+                    <span class="text-[8px] sm:text-[10px] -mt-0.5">${sym}</span>
+                </div>
+                <div class="absolute bottom-0.5 left-1 flex flex-col items-center leading-none rotate-180 z-10">
+                    <span class="font-bold text-[10px] sm:text-xs tracking-tighter">${card.label}</span>
+                    <span class="text-[8px] sm:text-[10px] -mt-0.5">${sym}</span>
+                </div>
+                <div class="absolute bottom-0.5 right-1 flex flex-col items-center leading-none rotate-180 z-10">
+                    <span class="font-bold text-[10px] sm:text-xs tracking-tighter">${card.label}</span>
+                    <span class="text-[8px] sm:text-[10px] -mt-0.5">${sym}</span>
+                </div>
+            `;
+
+            // Doppelköpfige Bildkarten (König K, Dame D, Bube B) im klassischen Turnierbild
+            if (rankId === 'J' || rankId === 'Q' || rankId === 'K') {
+                let halfFigureSvg = '';
+                if (rankId === 'K') {
+                    // König: Goldkrone, Hermelin-Mantel, Zepter & Reichsapfel
+                    halfFigureSvg = `
+                        <g>
+                            <rect x="14" y="25" width="32" height="24" rx="4" fill="${robeAccent}" stroke="#1f2937" stroke-width="1.2"/>
+                            <path d="M21 25 L30 47 L39 25 Z" fill="${tunicBlue}" stroke="${trimGold}" stroke-width="1.2"/>
+                            <path d="M18 26 Q30 33 42 26" fill="none" stroke="#fef3c7" stroke-width="3"/>
+                            <circle cx="30" cy="17" r="6.5" fill="#fde68a" stroke="#1f2937" stroke-width="1.1"/>
+                            <path d="M24 18 Q24 23 30 24 Q36 23 36 18" fill="#78350f"/>
+                            <path d="M23 11 L25 6 L28 9 L30 5 L32 9 L35 6 L37 11 Z" fill="#f59e0b" stroke="#78350f" stroke-width="0.9"/>
+                            <circle cx="15" cy="34" r="3.5" fill="#f59e0b" stroke="#1f2937" stroke-width="0.9"/>
+                            <path d="M15 28 V31 M13.5 29.5 H16.5" stroke="#78350f" stroke-width="1.1"/>
+                            <line x1="45" y1="20" x2="45" y2="48" stroke="#d97706" stroke-width="2"/>
+                            <circle cx="45" cy="19" r="2.2" fill="#f59e0b"/>
+                        </g>
+                    `;
+                } else if (rankId === 'Q') {
+                    // Dame: Schleier-Krone, verzierte Robe & Rose in der Hand
+                    halfFigureSvg = `
+                        <g>
+                            <path d="M20 12 Q16 24 19 32 L41 32 Q44 24 40 12 Z" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
+                            <rect x="15" y="25" width="30" height="24" rx="5" fill="${tunicBlue}" stroke="#1f2937" stroke-width="1.2"/>
+                            <path d="M22 25 L30 46 L38 25 Z" fill="#fef3c7" stroke="${trimGold}" stroke-width="1.2"/>
+                            <path d="M15 30 L24 48 M45 30 L36 48" stroke="${robeAccent}" stroke-width="3.5"/>
+                            <circle cx="30" cy="17" r="6" fill="#fde68a" stroke="#1f2937" stroke-width="1.1"/>
+                            <path d="M24 11 L27 7 L30 10 L33 7 L36 11 Z" fill="#f59e0b" stroke="#78350f" stroke-width="0.9"/>
+                            <line x1="43" y1="31" x2="43" y2="47" stroke="#15803d" stroke-width="1.6"/>
+                            <circle cx="43" cy="29" r="3" fill="#e11d48"/>
+                        </g>
+                    `;
+                } else {
+                    // Bube: Feder-Barett, Wams & Hellebarde
+                    halfFigureSvg = `
+                        <g>
+                            <rect x="15" y="25" width="30" height="24" rx="4" fill="${robeAccent}" stroke="#1f2937" stroke-width="1.2"/>
+                            <path d="M18 25 L42 48 M42 25 L18 48" stroke="${trimGold}" stroke-width="2.6"/>
+                            <circle cx="30" cy="17.5" r="6" fill="#fde68a" stroke="#1f2937" stroke-width="1.1"/>
+                            <path d="M22 12 Q30 7 38 12 L36 14 L24 14 Z" fill="${tunicBlue}" stroke="#1f2937" stroke-width="1"/>
+                            <path d="M23 10 Q19 6 25 7" fill="none" stroke="#e11d48" stroke-width="2"/>
+                            <line x1="45" y1="15" x2="45" y2="48" stroke="#64748b" stroke-width="2"/>
+                            <path d="M45 16 L49 20 L45 24 Z" fill="#94a3b8" stroke="#1f2937" stroke-width="0.8"/>
+                        </g>
+                    `;
+                }
+
+                return `
+                    <div class="w-full h-full relative">
+                        ${fourCornersHtml}
+                        <div class="absolute inset-x-3.5 sm:inset-x-4.5 inset-y-2 sm:inset-y-2.5 border border-slate-400/80 rounded-[3px] bg-[#fdfbf7] overflow-hidden flex flex-col">
+                            <svg viewBox="0 0 60 100" class="w-full h-full" preserveAspectRatio="none">
+                                ${halfFigureSvg}
+                                <g transform="translate(60, 100) rotate(180)">
+                                    ${halfFigureSvg}
+                                </g>
+                                <line x1="0" y1="50" x2="60" y2="50" stroke="${trimGold}" stroke-width="1.5"/>
+                                <text x="9" y="45" font-size="11" fill="${primaryColor}" text-anchor="middle">${sym}</text>
+                                <text x="51" y="63" font-size="11" fill="${primaryColor}" text-anchor="middle" transform="rotate(180 51 59)">${sym}</text>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Ass (A) mit großem Zentralsymbol (bei Herz mit feinem Medaillon-Kreis wie im Skatblatt)
+            if (rankId === 'A') {
+                const medaillonClass = card.suit === 'hearts'
+                    ? 'w-9 h-9 sm:w-12 sm:h-12 rounded-full border-2 border-red-600/35 bg-red-50/40'
+                    : '';
+                return `
+                    <div class="w-full h-full relative flex items-center justify-center">
+                        ${fourCornersHtml}
+                        <div class="${medaillonClass} flex items-center justify-center text-3xl sm:text-4xl leading-none">
+                            ${sym}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Zahlenkarten 10, 9, 8, 7 mit exakter Turnierblatt-Symbolanordnung
+            const pipPatterns = {
+                '7': [
+                    ['•', '', '•'],
+                    ['', '•', ''],
+                    ['•', '', '•'],
+                    ['•', '', '•']
+                ],
+                '8': [
+                    ['•', '', '•'],
+                    ['', '•', ''],
+                    ['•', '', '•'],
+                    ['', '•', ''],
+                    ['•', '', '•']
+                ],
+                '9': [
+                    ['•', '', '•'],
+                    ['•', '', '•'],
+                    ['', '•', ''],
+                    ['•', '', '•'],
+                    ['•', '', '•']
+                ],
+                '10': [
+                    ['•', '', '•'],
+                    ['', '•', ''],
+                    ['•', '', '•'],
+                    ['•', '', '•'],
+                    ['', '•', ''],
+                    ['•', '', '•']
+                ]
+            };
+
+            const rows = pipPatterns[rankId] || [['', '•', '']];
+            const pipsGridHtml = rows.map((row, rIdx) => {
+                const flip = rIdx >= Math.ceil(rows.length / 2) ? 'rotate-180' : '';
+                return `<div class="grid grid-cols-3 items-center justify-items-center leading-none text-[11px] sm:text-sm ${flip}">
+                    <span>${row[0] ? sym : ''}</span>
+                    <span>${row[1] ? sym : ''}</span>
+                    <span>${row[2] ? sym : ''}</span>
+                </div>`;
+            }).join('');
+
+            return `
+                <div class="w-full h-full relative flex flex-col justify-center">
+                    ${fourCornersHtml}
+                    <div class="px-3.5 sm:px-5 py-1.5 sm:py-2 flex flex-col justify-between h-full">
+                        ${pipsGridHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function createCardElement(card, isPlayable, isDisabled, isMiniTableCard = false) {
             const suitInfo = SUITS[card.suit];
             const isTrump = (state.trump === card.suit);
 
             const el = document.createElement('div');
-            el.className = `playing-card ${suitInfo.colorClass} ${isPlayable ? 'playable' : ''} ${isDisabled ? 'disabled' : ''} ${isTrump ? 'trump-card' : ''}`;
-
-            el.innerHTML = `
-                <div class="flex flex-col items-start leading-none">
-                    <span class="font-extrabold text-base sm:text-lg tracking-tighter">${card.label}</span>
-                    <span class="text-sm sm:text-base">${suitInfo.symbol}</span>
-                </div>
-                <div class="self-center text-2xl sm:text-3xl leading-none select-none">
-                    ${suitInfo.symbol}
-                </div>
-                <div class="flex flex-col items-end leading-none rotate-180">
-                    <span class="font-extrabold text-base sm:text-lg tracking-tighter">${card.label}</span>
-                    <span class="text-sm sm:text-base">${suitInfo.symbol}</span>
-                </div>
-            `;
+            el.className = `playing-card ${isMiniTableCard ? 'table-mini-card' : ''} ${suitInfo.colorClass} ${isPlayable ? 'playable' : ''} ${isDisabled ? 'disabled' : ''} ${isTrump ? 'trump-card' : ''}`;
+            el.innerHTML = buildClassicCardInnerHtml(card, suitInfo);
             return el;
         }
 
@@ -1876,6 +2265,7 @@
 
                 document.getElementById('lobby-screen').classList.add('hidden');
                 document.getElementById('game-screen').classList.remove('hidden');
+                document.body.classList.add('in-game-lock');
                 document.getElementById('header-round-info').classList.remove('hidden');
                 document.getElementById('btn-scoreboard').classList.remove('hidden');
                 document.getElementById('btn-leave-room').classList.remove('hidden');
@@ -1950,6 +2340,7 @@
                 // UI-Ansichten umschalten
                 document.getElementById('lobby-screen').classList.add('hidden');
                 document.getElementById('game-screen').classList.remove('hidden');
+                document.body.classList.add('in-game-lock');
                 document.getElementById('header-round-info').classList.remove('hidden');
                 document.getElementById('btn-scoreboard').classList.remove('hidden');
                 document.getElementById('btn-leave-room').classList.remove('hidden');
@@ -2076,6 +2467,7 @@
             clearTimeout(state.aiTimeout);
             state.roomCode = null;
             state.phase = 'LOBBY';
+            document.body.classList.remove('in-game-lock');
 
             document.getElementById('round-summary-modal').classList.add('hidden');
             document.getElementById('game-screen').classList.add('hidden');
