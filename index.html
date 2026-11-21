@@ -2021,6 +2021,7 @@
           messagingSenderId: "637621560932",
           appId: "1:637621560932:web:83c8e20b1ea6686272e171"
         };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config): MANUAL_FIREBASE_CONFIG;
 
         let db = null;
         let auth = null;
