@@ -114,67 +114,6 @@
             }
         }
 
-        .casino-felt {
-            background:
-                radial-gradient(ellipse at center, rgba(255, 255, 255, 0.08) 0%, transparent 65%),
-                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 2px, transparent 2px, transparent 6px),
-                radial-gradient(ellipse at center, var(--felt-center) 0%, #155233 62%, var(--felt-edge) 100%);
-            border-radius: 28px;
-            box-shadow:
-                inset 0 0 40px rgba(0, 0, 0, 0.65),
-                inset 0 0 0 2px rgba(212, 175, 55, 0.35);
-            position: relative;
-        }
-
-        @media (min-width: 640px) {
-            .casino-felt {
-                border-radius: 52px;
-            }
-        }
-
-        .table-watermark {
-            font-family: 'Playfair Display', serif;
-            letter-spacing: 0.14em;
-            color: rgba(255, 255, 255, 0.07);
-            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
-        }
-
-        /* Klassische Spielkarten (Canasta-Stil) */
-        .playing-card {
-            width: 72px;
-            height: 106px;
-            background: linear-gradient(165deg, #ffffff 0%, var(--card-ivory) 100%);
-            border-radius: 9px;
-            box-shadow:
-                0 4px 10px rgba(0, 0, 0, 0.45),
-                0 1px 2px rgba(0, 0, 0, 0.3),
-                inset 0 0 0 1px #d6d3cb;
-            position: relative;
-            transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, filter 0.2s ease;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        @media (min-width: 640px) {
-            .playing-card {
-                width: 88px;
-                height: 128px;
-                border-radius: 10px;
-            }
-        }
-
-        .playing-card.table-mini-card {
-            width: 64px;
-            height: 94px;
-        }
-
-        @media (min-width: 640px) {
-            .playing-card.table-mini-card {
-                width: 78px;
-                height: 114px;
-            }
-        }
-
         .playing-card.playable {
             cursor: pointer;
         }
@@ -2012,16 +1951,15 @@
         import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'rauf-runter-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const MANUAL_FIREBASE_CONFIG = {
-          apiKey: "AIzaSyDH6-vWsHMLxS_DmxPD04iDL8IGfNPdVmw",
-          authDomain: "rauf-runter-online.firebaseapp.com",
-          projectId: "rauf-runter-online",
-          storageBucket: "rauf-runter-online.firebasestorage.app",
-          messagingSenderId: "637621560932",
-          appId: "1:637621560932:web:83c8e20b1ea6686272e171"
+            apiKey: "AIzaSyDH6-vWsHMLxS_DmxPD04iDL8IGfNPdVmw",
+            authDomain: "rauf-runter-online.firebaseapp.com",
+            projectId: "rauf-runter-online",
+            storageBucket: "rauf-runter-online.firebasestorage.app",
+            messagingSenderId: "637621560932",
+            appId: "1:637621560932:web:83c8e20b1ea6686272e171"
         };
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config): MANUAL_FIREBASE_CONFIG;
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : MANUAL_FIREBASE_CONFIG;
 
         let db = null;
         let auth = null;
@@ -2095,7 +2033,7 @@
                 showMultiError('Raum konnte nicht erstellt werden: ' + err.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Raum erstellen';
+                btn.textContent = 'Tisch erstellen';
             }
         };
 
